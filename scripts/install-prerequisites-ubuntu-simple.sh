@@ -95,7 +95,7 @@ install_python() {
     print_status "Installing Python and development tools..."
     
     # Install Python 3.12 (default in Ubuntu 24.04) and development tools
-    sudo apt install -y python3 python3-venv python3-dev python3-pip python3-distutils
+    sudo apt install -y python3 python3-venv python3-dev python3-pip
     sudo apt install -y build-essential libssl-dev libffi-dev
     
     # Verify Python installation

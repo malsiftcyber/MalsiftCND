@@ -123,7 +123,7 @@ install_python() {
     sudo apt update
     
     # Install Python 3.11 and related packages
-    sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+    sudo apt install -y python3.11 python3.11-venv python3.11-dev
     sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
     
     # Install pip for Python 3.11

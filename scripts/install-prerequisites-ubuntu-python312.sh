@@ -101,7 +101,7 @@ install_python() {
     print_status "Installing Python 3.12..."
     
     # Install Python 3.12 and related packages (default in Ubuntu 24.04)
-    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-pip python3.12-distutils
+    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-pip
     sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
     
     # Create symlinks for easier access

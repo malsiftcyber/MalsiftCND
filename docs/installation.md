@@ -75,7 +75,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 sudo apt install -y software-properties-common
 sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils build-essential libssl-dev libffi-dev python3-dev python3-pip
+sudo apt install -y python3.11 python3.11-venv python3.11-dev build-essential libssl-dev libffi-dev python3-dev python3-pip
 sudo python3.11 -m ensurepip --upgrade
 
 # Install other dependencies
@@ -223,7 +223,7 @@ chmod +x install-prereqs.sh && ./install-prereqs.sh
    sudo apt update
    
    # Install Python 3.11 and development tools
-   sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+   sudo apt install -y python3.11 python3.11-venv python3.11-dev
    sudo apt install -y build-essential libssl-dev libffi-dev python3-dev python3-pip
    
    # Install pip for Python 3.11
@@ -482,8 +482,15 @@ SSL_CERTFILE=./certs/your-certificate.pem
 - Ubuntu 24.04 LTS doesn't include Python 3.11 in default repositories
 - Add deadsnakes PPA: `sudo add-apt-repository -y ppa:deadsnakes/ppa`
 - Update package list: `sudo apt update`
-- Then install: `sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-pip`
+- Then install: `sudo apt install -y python3.11 python3.11-venv python3.11-dev`
+- Install pip: `sudo apt install -y python3-pip && sudo python3.11 -m ensurepip --upgrade`
 - Alternative: Use Python 3.12 (default in Ubuntu 24.04) by changing requirements.txt
+
+**python3-distutils package not found**:
+- The `python3-distutils` package has been removed from Ubuntu 24.04 LTS
+- Distutils functionality is now built into Python core
+- Simply omit this package from installation commands
+- Use: `sudo apt install -y python3 python3-venv python3-dev python3-pip`
 
 **Permission denied for Docker**:
 - Add user to docker group: `sudo usermod -aG docker $USER`
