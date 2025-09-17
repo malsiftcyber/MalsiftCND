@@ -1,0 +1,14 @@
+"""
+Main API router
+"""
+from fastapi import APIRouter
+from app.api.v1.endpoints import auth, scans, devices, integrations, admin
+
+api_router = APIRouter()
+
+# Include all endpoint routers
+api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
+api_router.include_router(scans.router, prefix="/scans", tags=["scans"])
+api_router.include_router(devices.router, prefix="/devices", tags=["devices"])
+api_router.include_router(integrations.router, prefix="/integrations", tags=["integrations"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
