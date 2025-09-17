@@ -577,6 +577,135 @@ Get available export formats and options.
 }
 ```
 
+### Tagging
+
+#### POST /tagging/companies
+Create a new company.
+
+**Request Body:**
+```json
+{
+  "name": "Acme Corporation",
+  "code": "ACME",
+  "description": "Main company",
+  "contact_email": "admin@acme.com",
+  "contact_phone": "+1-555-0123",
+  "address": "123 Main St, City, State 12345"
+}
+```
+
+#### GET /tagging/companies
+List all companies.
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Acme Corporation",
+    "code": "ACME",
+    "description": "Main company",
+    "contact_email": "admin@acme.com",
+    "contact_phone": "+1-555-0123",
+    "address": "123 Main St, City, State 12345",
+    "is_active": true,
+    "created_at": "2024-01-15T00:00:00Z",
+    "sites_count": 5,
+    "devices_count": 150
+  }
+]
+```
+
+#### GET /tagging/companies/{company_id}
+Get company by ID.
+
+#### PUT /tagging/companies/{company_id}
+Update company.
+
+#### DELETE /tagging/companies/{company_id}
+Delete company (soft delete).
+
+#### POST /tagging/sites
+Create a new site.
+
+**Request Body:**
+```json
+{
+  "company_id": "uuid",
+  "name": "Headquarters",
+  "code": "HQ",
+  "description": "Main office",
+  "address": "123 Main St",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postal_code": "10001",
+  "timezone": "America/New_York"
+}
+```
+
+#### GET /tagging/sites
+List sites, optionally filtered by company.
+
+**Query Parameters:**
+- `company_id`: Filter by company ID (optional)
+- `active_only`: Show only active sites (default: true)
+
+#### GET /tagging/sites/{site_id}
+Get site by ID.
+
+#### PUT /tagging/sites/{site_id}
+Update site.
+
+#### DELETE /tagging/sites/{site_id}
+Delete site (soft delete).
+
+#### POST /tagging/devices/{device_id}/tags
+Tag a device with company, site, and custom tags.
+
+**Request Body:**
+```json
+{
+  "company_id": "uuid",
+  "site_id": "uuid",
+  "custom_tags": {
+    "department": "IT",
+    "environment": "production",
+    "owner": "john.doe@company.com"
+  }
+}
+```
+
+#### GET /tagging/devices/{device_id}/tags
+Get all tags for a device.
+
+**Response:**
+```json
+{
+  "company": {
+    "id": "uuid",
+    "name": "Acme Corporation",
+    "code": "ACME"
+  },
+  "site": {
+    "id": "uuid",
+    "name": "Headquarters",
+    "code": "HQ"
+  },
+  "custom_tags": {
+    "department": "IT",
+    "environment": "production",
+    "owner": "john.doe@company.com"
+  }
+}
+```
+
+#### POST /tagging/scans/{scan_id}/tags
+Tag a scan with company, site, and custom tags.
+
+#### GET /tagging/scans/{scan_id}/tags
+Get all tags for a scan.
+
 ### Scheduling
 
 #### GET /scheduling/schedules

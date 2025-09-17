@@ -43,6 +43,7 @@ class ExportService:
             headers = [
                 'IP Address', 'Hostname', 'Device Type', 'Operating System',
                 'Confidence', 'Risk Score', 'First Seen', 'Last Seen',
+                'Company Name', 'Company Code', 'Site Name', 'Site Code',
                 'Tags', 'Notes', 'Is Active'
             ]
             
@@ -68,6 +69,10 @@ class ExportService:
                     device.risk_score,
                     device.first_seen.isoformat() if device.first_seen else '',
                     device.last_seen.isoformat() if device.last_seen else '',
+                    device.company.name if device.company else '',
+                    device.company.code if device.company else '',
+                    device.site.name if device.site else '',
+                    device.site.code if device.site else '',
                     '; '.join(device.tags) if device.tags else '',
                     device.notes or '',
                     'Yes' if device.is_active else 'No'
@@ -256,6 +261,7 @@ class ExportService:
             headers = [
                 'IP Address', 'Hostname', 'Device Type', 'Operating System',
                 'Confidence', 'Risk Score', 'First Seen', 'Discovery Time (Hours Ago)',
+                'Company Name', 'Company Code', 'Site Name', 'Site Code',
                 'Tags', 'Open Ports', 'Services', 'Service Count', 'High Risk Services',
                 'AI Analysis', 'Notes', 'Discovery Method'
             ]
@@ -284,6 +290,10 @@ class ExportService:
                     device.risk_score,
                     device.first_seen.isoformat(),
                     f"{hours_ago:.1f}",
+                    device.company.name if device.company else '',
+                    device.company.code if device.company else '',
+                    device.site.name if device.site else '',
+                    device.site.code if device.site else '',
                     '; '.join(device.tags) if device.tags else '',
                     services_data['ports'],
                     services_data['services'],
@@ -340,7 +350,8 @@ class ExportService:
             headers = [
                 'IP Address', 'Hostname', 'Device Type', 'Operating System',
                 'Confidence', 'Risk Score', 'First Seen', 'Last Seen',
-                'Days Since Discovery', 'Tags', 'Open Ports', 'Services',
+                'Days Since Discovery', 'Company Name', 'Company Code',
+                'Site Name', 'Site Code', 'Tags', 'Open Ports', 'Services',
                 'Service Count', 'High Risk Services', 'Correction Count',
                 'AI Analysis', 'Notes'
             ]
@@ -370,6 +381,10 @@ class ExportService:
                     device.first_seen.isoformat() if device.first_seen else '',
                     device.last_seen.isoformat() if device.last_seen else '',
                     days_since_discovery,
+                    device.company.name if device.company else '',
+                    device.company.code if device.company else '',
+                    device.site.name if device.site else '',
+                    device.site.code if device.site else '',
                     '; '.join(device.tags) if device.tags else '',
                     services_data['ports'],
                     services_data['services'],

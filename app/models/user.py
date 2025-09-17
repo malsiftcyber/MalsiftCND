@@ -1,7 +1,7 @@
 """
 User database model
 """
-from sqlalchemy import Column, String, Boolean, DateTime, Text
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 import uuid
@@ -25,6 +25,9 @@ class User(Base):
     mfa_enabled = Column(Boolean, default=False, nullable=False)
     backup_codes = Column(Text, nullable=True)  # JSON array of backup codes
     
+    # Company association
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True)
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -37,6 +40,7 @@ class User(Base):
     corrections_made = relationship("DeviceCorrection", foreign_keys="DeviceCorrection.user_id", back_populates="user")
     corrections_verified = relationship("DeviceCorrection", foreign_keys="DeviceCorrection.verified_by", back_populates="verifier")
     device_feedback = relationship("DeviceFeedback", back_populates="user")
+    company = relationship("Company", back_populates="users")
     
     def __repr__(self):
         return f"<User(username='{self.username}', email='{self.email}')>"

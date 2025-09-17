@@ -304,6 +304,99 @@ Risk Score: 5-10
 - Share filters with team members
 - Export filtered results
 
+## Company & Site Management
+
+### Multi-Tenant Data Segregation
+
+**Company Management:**
+MalsiftCND supports multi-tenant deployments where different companies or business units can be segregated using company and site tagging.
+
+**Company Features:**
+- **Company Creation**: Create companies with unique names and codes
+- **Contact Information**: Store company contact details and addresses
+- **Site Management**: Create multiple sites within each company
+- **Data Segregation**: All devices and scans are tagged with company/site information
+- **Export Filtering**: Export reports filtered by company or site
+
+**Site Management:**
+- **Site Creation**: Create sites within companies with unique codes
+- **Location Information**: Store detailed address and location data
+- **Timezone Support**: Configure timezone for each site
+- **Device Association**: Associate devices with specific sites
+
+### Managing Companies
+
+**Creating Companies:**
+1. Navigate to Company & Site Management
+2. Click "Add Company"
+3. Enter company details:
+   - Company Name (e.g., "Acme Corporation")
+   - Company Code (e.g., "ACME", "CORP1")
+   - Description and contact information
+   - Address details
+4. Save the company
+
+**Company Codes:**
+- Must be unique across all companies
+- Used for data segregation and filtering
+- Appears in all exports and reports
+- Short, memorable codes recommended
+
+### Managing Sites
+
+**Creating Sites:**
+1. Select the parent company
+2. Click "Add Site"
+3. Enter site details:
+   - Site Name (e.g., "Headquarters", "Branch Office 1")
+   - Site Code (e.g., "HQ", "BR1", "DC1")
+   - Location information
+   - Timezone configuration
+4. Save the site
+
+**Site Codes:**
+- Must be unique within each company
+- Used for location-based data segregation
+- Appears in device exports and reports
+- Short, descriptive codes recommended
+
+### Device Tagging
+
+**Tagging Devices:**
+1. Enter device IP address
+2. Select company and site from dropdowns
+3. Add custom tags in JSON format
+4. Apply tags to the device
+
+**Tag Types:**
+- **Company Tags**: Associate device with company
+- **Site Tags**: Associate device with specific site
+- **Custom Tags**: Add custom key-value pairs (department, environment, etc.)
+
+**Tag Examples:**
+```json
+{
+  "department": "IT",
+  "environment": "production",
+  "owner": "john.doe@company.com",
+  "criticality": "high"
+}
+```
+
+### Export Integration
+
+**Company/Site in Exports:**
+All CSV exports now include:
+- Company Name and Company Code columns
+- Site Name and Site Code columns
+- Custom tags in separate columns
+
+**Filtered Exports:**
+- Export devices by company
+- Export devices by site
+- Export devices by custom tag values
+- Multi-company reports for MSPs
+
 ## Scan Scheduling
 
 ### Automated Discovery Scans

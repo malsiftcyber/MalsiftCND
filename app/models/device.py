@@ -1,7 +1,7 @@
 """
 Device database model
 """
-from sqlalchemy import Column, String, Float, DateTime, Text, Boolean
+from sqlalchemy import Column, String, Float, DateTime, Text, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.sql import func
 import uuid
@@ -48,6 +48,10 @@ class Device(Base):
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
     
+    # Company and site associations
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True)
+    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -55,6 +59,9 @@ class Device(Base):
     # Relationships
     corrections = relationship("DeviceCorrection", back_populates="device")
     feedback = relationship("DeviceFeedback", back_populates="device")
+    device_tags = relationship("DeviceTag", back_populates="device")
+    company = relationship("Company", back_populates="devices")
+    site = relationship("Site", back_populates="devices")
     
     def __repr__(self):
         return f"<Device(ip='{self.ip}', type='{self.device_type}', os='{self.operating_system}')>"

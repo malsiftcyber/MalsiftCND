@@ -25,6 +25,10 @@ class Scan(Base):
     timeout = Column(Integer, default=300, nullable=False)
     rate_limit = Column(Integer, nullable=True)
     
+    # Company and site associations
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True)
+    site_id = Column(UUID(as_uuid=True), ForeignKey("sites.id"), nullable=True)
+    
     # Scan status
     status = Column(String(20), default="queued", nullable=False)  # queued, running, completed, failed, cancelled
     progress = Column(Integer, default=0, nullable=False)  # 0-100
@@ -42,6 +46,9 @@ class Scan(Base):
     # Relationships
     user = relationship("User", back_populates="scans")
     scan_results = relationship("ScanResult", back_populates="scan", cascade="all, delete-orphan")
+    scan_tags = relationship("ScanTag", back_populates="scan")
+    company = relationship("Company", back_populates="scans")
+    site = relationship("Site", back_populates="scans")
     
     def __repr__(self):
         return f"<Scan(id='{self.id}', status='{self.status}', targets={len(self.targets)})>"
