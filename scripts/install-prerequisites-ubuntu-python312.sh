@@ -1,6 +1,6 @@
 #!/bin/bash
 # MalsiftCND Prerequisites Installation Script for Ubuntu 24.04 LTS
-# This script installs all required system components for MalsiftCND
+# This version uses Python 3.12 (default in Ubuntu 24.04) instead of Python 3.11
 
 set -e
 
@@ -90,47 +90,26 @@ install_docker() {
     print_warning "You need to logout and login again for Docker group membership to take effect"
 }
 
-# Function to install Docker Compose standalone (alternative)
-install_docker_compose_standalone() {
-    if command_exists docker-compose; then
-        print_warning "Docker Compose standalone is already installed"
-        docker-compose --version
-        return
-    fi
-
-    print_status "Installing Docker Compose standalone..."
-    
-    # Install Docker Compose standalone
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-    
-    print_success "Docker Compose standalone installed successfully"
-}
-
-# Function to install Python 3.11
+# Function to install Python 3.12 (default in Ubuntu 24.04)
 install_python() {
-    if command_exists python3.11; then
-        print_warning "Python 3.11 is already installed"
-        python3.11 --version
+    if command_exists python3.12; then
+        print_warning "Python 3.12 is already installed"
+        python3.12 --version
         return
     fi
 
-    print_status "Installing Python 3.11..."
+    print_status "Installing Python 3.12..."
     
-    # Add deadsnakes PPA for Python 3.11
-    sudo apt install -y software-properties-common
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt update
-    
-    # Install Python 3.11 and related packages
-    sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-pip python3.11-distutils
+    # Install Python 3.12 and related packages (default in Ubuntu 24.04)
+    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-pip python3.12-distutils
     sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
     
     # Create symlinks for easier access
-    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-    sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+    sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
     
-    print_success "Python 3.11 installed successfully"
+    print_success "Python 3.12 installed successfully"
+    print_warning "Note: This script uses Python 3.12 instead of Python 3.11. You may need to update requirements.txt"
 }
 
 # Function to install PostgreSQL
@@ -210,11 +189,11 @@ verify_installations() {
         print_warning "Docker Compose standalone not found"
     fi
     
-    echo "Python 3.11:"
-    if command_exists python3.11; then
-        python3.11 --version
+    echo "Python 3.12:"
+    if command_exists python3.12; then
+        python3.12 --version
     else
-        print_error "Python 3.11 not found"
+        print_error "Python 3.12 not found"
     fi
     
     echo "PostgreSQL:"
@@ -285,10 +264,10 @@ create_database() {
 main() {
     echo "=========================================="
     echo "MalsiftCND Prerequisites Installation"
-    echo "Ubuntu 24.04 LTS"
+    echo "Ubuntu 24.04 LTS - Python 3.12 Version"
     echo "=========================================="
     echo
-    
+
     # Check prerequisites
     check_root
     check_sudo
@@ -296,7 +275,6 @@ main() {
     # Install components
     update_system
     install_docker
-    install_docker_compose_standalone
     install_python
     install_postgresql
     install_redis
@@ -321,13 +299,17 @@ main() {
     echo "Next steps:"
     echo "1. Logout and login again to activate Docker group membership"
     echo "2. Clone MalsiftCND repository: git clone https://github.com/malsiftcyber/MalsiftCND.git"
-    echo "3. Follow the installation guide in docs/installation.md"
+    echo "3. Update requirements.txt to use Python 3.12 if needed"
+    echo "4. Follow the installation guide in docs/installation.md"
     echo
     echo "For Docker group membership, you can also run:"
     echo "  newgrp docker"
     echo
     echo "To test Docker without sudo:"
     echo "  docker run hello-world"
+    echo
+    echo "Note: This installation uses Python 3.12 instead of Python 3.11."
+    echo "You may need to update the application's requirements.txt file."
     echo
 }
 
