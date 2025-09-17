@@ -189,8 +189,9 @@ async def export_scan_results(
             results = await scan_service.export_scan_results_json(scan_id)
             return results
         elif format == "csv":
-            results = await scan_service.export_scan_results_csv(scan_id)
-            return results
+            # Redirect to the new export endpoint
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url=f"/api/v1/exports/scans/{scan_id}/csv")
         elif format == "xml":
             results = await scan_service.export_scan_results_xml(scan_id)
             return results

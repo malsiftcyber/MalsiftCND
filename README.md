@@ -12,6 +12,7 @@ MalsiftCND is an advanced network discovery and attack surface management platfo
 - **AI-Powered Analysis**: Integrates with LLM APIs (ChatGPT, Anthropic, Grok) for enhanced device identification
 - **Device Correction System**: Correct mis-identifications and improve AI accuracy over time
 - **Pattern Learning**: Automatic extraction and application of identification patterns
+- **CSV Export System**: Export discovery reports and device data in CSV format
 - **Enterprise Integrations**: Connects with RunZero, Tanium, Armis, and Active Directory/Azure AD
 - **Secure Authentication**: Supports local users, AD, and Azure AD with optional MFA
 - **SSL/TLS Support**: LetEncrypt and enterprise certificate support

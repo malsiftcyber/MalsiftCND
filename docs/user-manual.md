@@ -328,6 +328,60 @@ Risk Score: 5-10
 - Compliance status
 - Recommendations
 
+#### CSV Export Reports
+
+**Device Export:**
+- Export all devices or specific device IDs
+- Include/exclude correction history
+- Include/exclude service details
+- Include/exclude AI analysis data
+- Customizable data fields
+
+**Discovery Report:**
+- Comprehensive device overview
+- Filter by date range
+- Filter by device types
+- Filter by risk score range
+- Include discovery metrics
+
+**Scan Results Export:**
+- Export results from specific scans
+- Include target information
+- Include service details
+- Include OS detection results
+- Include scan metadata
+
+**Corrections Export:**
+- Export device correction history
+- Include original vs corrected data
+- Include correction reasons
+- Include verification status
+- Include learning metrics
+
+#### Export Interface
+
+**Web-Based Export:**
+1. Navigate to Export Data page
+2. Select export type (Devices, Discovery Report, Scan Results, Corrections)
+3. Configure export options
+4. Set filters and parameters
+5. Click export button
+6. Download CSV file
+
+**Quick Export Options:**
+- All Devices: Complete device inventory
+- High Risk Devices: Devices with risk score > 7
+- Recent Discoveries: Devices discovered in last 30 days
+- Servers Only: Windows and Linux servers
+- Network Devices: Routers, switches, firewalls
+
+**Export Features:**
+- Real-time export generation
+- Progress indicators
+- Error handling and validation
+- Automatic filename generation
+- Direct download to browser
+
 #### Custom Reports
 
 **Report Builder:**

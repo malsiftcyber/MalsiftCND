@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Data - MalsiftCND</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .export-section {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .export-options {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .export-options h4 {
+            margin-top: 0;
+            color: #0056b3;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .date-range {
+            display: flex;
+            gap: 15px;
+        }
+        .date-range input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Export Data</h1>
+            <p>Export discovery reports and device data in CSV format</p>
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Generating export file...</p>
+        </div>
+
+        <!-- Device Export Section -->
+        <div class="export-section">
+            <h3>📊 Device Export</h3>
+            <p>Export device information with customizable data fields</p>
+            
+            <form id="device-export-form">
+                <div class="form-group">
+                    <label for="device-ids">Device IDs (optional):</label>
+                    <textarea id="device-ids" placeholder="Enter device IDs separated by commas, or leave empty to export all devices"></textarea>
+                    <div class="help-text">Leave empty to export all devices, or specify device IDs separated by commas</div>
+                </div>
+
+                <div class="export-options">
+                    <h4>Export Options</h4>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="include-corrections" checked>
+                            <label for="include-corrections">Include Corrections</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="include-services" checked>
+                            <label for="include-services">Include Services</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="include-ai-analysis" checked>
+                            <label for="include-ai-analysis">Include AI Analysis</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success">📥 Export Devices CSV</button>
+            </form>
+        </div>
+
+        <!-- Discovery Report Section -->
+        <div class="export-section">
+            <h3>📈 Discovery Report</h3>
+            <p>Export comprehensive discovery report with filtering options</p>
+            
+            <form id="discovery-report-form">
+                <div class="form-group">
+                    <label>Date Range:</label>
+                    <div class="date-range">
+                        <input type="date" id="start-date" placeholder="Start Date">
+                        <input type="date" id="end-date" placeholder="End Date">
+                    </div>
+                    <div class="help-text">Leave empty to include all dates</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="device-types">Device Types (optional):</label>
+                    <input type="text" id="device-types" placeholder="Windows Server, Linux Server, Router, etc.">
+                    <div class="help-text">Comma-separated list of device types to include</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Risk Score Range:</label>
+                    <div class="date-range">
+                        <input type="number" id="risk-score-min" placeholder="Min Risk Score" min="0" max="10" step="0.1">
+                        <input type="number" id="risk-score-max" placeholder="Max Risk Score" min="0" max="10" step="0.1">
+                    </div>
+                    <div class="help-text">Risk score range from 0.0 to 10.0</div>
+                </div>
+
+                <button type="submit" class="btn btn-success">📊 Export Discovery Report CSV</button>
+            </form>
+        </div>
+
+        <!-- Scan Results Export Section -->
+        <div class="export-section">
+            <h3>🔍 Scan Results Export</h3>
+            <p>Export results from specific scans</p>
+            
+            <form id="scan-export-form">
+                <div class="form-group">
+                    <label for="scan-id">Scan ID:</label>
+                    <input type="text" id="scan-id" placeholder="Enter scan ID" required>
+                    <div class="help-text">Enter the ID of the scan you want to export</div>
+                </div>
+
+                <button type="submit" class="btn btn-success">📋 Export Scan Results CSV</button>
+            </form>
+        </div>
+
+        <!-- Corrections Export Section -->
+        <div class="export-section">
+            <h3>🔧 Corrections Export</h3>
+            <p>Export device correction history</p>
+            
+            <form id="corrections-export-form">
+                <div class="form-group">
+                    <label for="correction-device-id">Device ID (optional):</label>
+                    <input type="text" id="correction-device-id" placeholder="Enter device ID for specific device corrections">
+                    <div class="help-text">Leave empty to export all corrections, or specify a device ID</div>
+                </div>
+
+                <button type="submit" class="btn btn-success">📝 Export Corrections CSV</button>
+            </form>
+        </div>
+
+        <!-- Quick Export Buttons -->
+        <div class="export-section">
+            <h3>⚡ Quick Exports</h3>
+            <p>One-click exports for common use cases</p>
+            
+            <button type="button" class="btn" onclick="quickExport('all-devices')">All Devices</button>
+            <button type="button" class="btn" onclick="quickExport('high-risk')">High Risk Devices</button>
+            <button type="button" class="btn" onclick="quickExport('recent-discoveries')">Recent Discoveries</button>
+            <button type="button" class="btn" onclick="quickExport('servers')">Servers Only</button>
+            <button type="button" class="btn" onclick="quickExport('network-devices')">Network Devices</button>
+        </div>
+    </div>
+
+    <script>
+        const apiBaseUrl = '/api/v1';
+
+        // Device Export Form
+        document.getElementById('device-export-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const deviceIds = document.getElementById('device-ids').value.trim();
+            const includeCorrections = document.getElementById('include-corrections').checked;
+            const includeServices = document.getElementById('include-services').checked;
+            const includeAiAnalysis = document.getElementById('include-ai-analysis').checked;
+            
+            const params = new URLSearchParams({
+                include_corrections: includeCorrections,
+                include_services: includeServices,
+                include_ai_analysis: includeAiAnalysis
+            });
+            
+            if (deviceIds) {
+                params.append('device_ids', deviceIds);
+            }
+            
+            await exportData(`/exports/devices/csv?${params.toString()}`, 'devices_export.csv');
+        });
+
+        // Discovery Report Form
+        document.getElementById('discovery-report-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const deviceTypes = document.getElementById('device-types').value.trim();
+            const riskScoreMin = document.getElementById('risk-score-min').value;
+            const riskScoreMax = document.getElementById('risk-score-max').value;
+            
+            const params = new URLSearchParams();
+            
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (deviceTypes) params.append('device_types', deviceTypes);
+            if (riskScoreMin) params.append('risk_score_min', riskScoreMin);
+            if (riskScoreMax) params.append('risk_score_max', riskScoreMax);
+            
+            await exportData(`/exports/discovery-report/csv?${params.toString()}`, 'discovery_report.csv');
+        });
+
+        // Scan Export Form
+        document.getElementById('scan-export-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const scanId = document.getElementById('scan-id').value.trim();
+            if (!scanId) {
+                showError('Scan ID is required');
+                return;
+            }
+            
+            await exportData(`/exports/scans/${scanId}/csv`, `scan_${scanId}_results.csv`);
+        });
+
+        // Corrections Export Form
+        document.getElementById('corrections-export-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const deviceId = document.getElementById('correction-device-id').value.trim();
+            
+            const params = new URLSearchParams();
+            if (deviceId) {
+                params.append('device_id', deviceId);
+            }
+            
+            await exportData(`/exports/corrections/csv?${params.toString()}`, 'corrections_export.csv');
+        });
+
+        // Quick Export Functions
+        async function quickExport(type) {
+            let url = '';
+            let filename = '';
+            
+            switch (type) {
+                case 'all-devices':
+                    url = '/exports/devices/csv';
+                    filename = 'all_devices.csv';
+                    break;
+                case 'high-risk':
+                    url = '/exports/discovery-report/csv?risk_score_min=7';
+                    filename = 'high_risk_devices.csv';
+                    break;
+                case 'recent-discoveries':
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    url = `/exports/discovery-report/csv?start_date=${thirtyDaysAgo.toISOString().split('T')[0]}`;
+                    filename = 'recent_discoveries.csv';
+                    break;
+                case 'servers':
+                    url = '/exports/discovery-report/csv?device_types=Windows Server,Linux Server';
+                    filename = 'servers.csv';
+                    break;
+                case 'network-devices':
+                    url = '/exports/discovery-report/csv?device_types=Router,Switch,Firewall,Access Point';
+                    filename = 'network_devices.csv';
+                    break;
+            }
+            
+            await exportData(url, filename);
+        }
+
+        // Generic Export Function
+        async function exportData(url, filename) {
+            try {
+                showLoading(true);
+                hideMessages();
+                
+                const response = await fetch(`${apiBaseUrl}${url}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Export failed');
+                }
+                
+                // Get filename from response headers or use provided filename
+                const contentDisposition = response.headers.get('Content-Disposition');
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+                
+                // Create blob and download
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+                
+                showSuccess(`Export completed successfully! File: ${filename}`);
+                
+            } catch (error) {
+                showError('Export failed: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Utility Functions
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        // Set default date range (last 30 days)
+        document.addEventListener('DOMContentLoaded', function() {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            
+            document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
+            document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

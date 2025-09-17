@@ -464,6 +464,107 @@ Get correction statistics.
 }
 ```
 
+### Exports
+
+#### GET /exports/devices/csv
+Export devices to CSV format.
+
+**Query Parameters:**
+- `device_ids`: Comma-separated device IDs (optional)
+- `include_corrections`: Include correction data (default: true)
+- `include_services`: Include service data (default: true)
+- `include_ai_analysis`: Include AI analysis data (default: true)
+
+**Response:** CSV file download
+
+#### POST /exports/devices/csv
+Export devices to CSV format (POST method for complex filters).
+
+**Request Body:**
+```json
+{
+  "device_ids": ["uuid1", "uuid2"],
+  "include_corrections": true,
+  "include_services": true,
+  "include_ai_analysis": true
+}
+```
+
+**Response:** CSV file download
+
+#### GET /exports/scans/{scan_id}/csv
+Export scan results to CSV format.
+
+**Response:** CSV file download
+
+#### GET /exports/corrections/csv
+Export device corrections to CSV format.
+
+**Query Parameters:**
+- `device_id`: Device ID to filter corrections (optional)
+
+**Response:** CSV file download
+
+#### GET /exports/discovery-report/csv
+Export comprehensive discovery report to CSV format.
+
+**Query Parameters:**
+- `start_date`: Start date for report (ISO format)
+- `end_date`: End date for report (ISO format)
+- `device_types`: Comma-separated device types
+- `risk_score_min`: Minimum risk score (0.0-10.0)
+- `risk_score_max`: Maximum risk score (0.0-10.0)
+
+**Response:** CSV file download
+
+#### POST /exports/discovery-report/csv
+Export comprehensive discovery report to CSV format (POST method).
+
+**Request Body:**
+```json
+{
+  "start_date": "2024-01-01T00:00:00Z",
+  "end_date": "2024-01-31T23:59:59Z",
+  "device_types": ["Windows Server", "Linux Server"],
+  "risk_score_min": 5.0,
+  "risk_score_max": 10.0
+}
+```
+
+**Response:** CSV file download
+
+#### GET /exports/formats
+Get available export formats and options.
+
+**Response:**
+```json
+{
+  "formats": [
+    {
+      "name": "CSV",
+      "description": "Comma-separated values format",
+      "media_type": "text/csv",
+      "supported_data": [
+        "devices",
+        "scan_results",
+        "corrections",
+        "discovery_reports"
+      ]
+    }
+  ],
+  "device_export_options": {
+    "include_corrections": "Include device correction history",
+    "include_services": "Include service and port information",
+    "include_ai_analysis": "Include AI analysis details"
+  },
+  "discovery_report_options": {
+    "date_range": "Filter by discovery date range",
+    "device_types": "Filter by specific device types",
+    "risk_score_range": "Filter by risk score range"
+  }
+}
+```
+
 ### Integrations
 
 #### GET /integrations/
