@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Correction - MalsiftCND</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .device-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+        .correction-form {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .correction-history {
+            margin-top: 30px;
+        }
+        .correction-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .correction-meta {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .original {
+            color: #dc3545;
+            text-decoration: line-through;
+        }
+        .corrected {
+            color: #28a745;
+            font-weight: 600;
+        }
+        .pattern-suggestions {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .pattern-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .confidence-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.3s ease;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Device Correction</h1>
+            <p>Correct device identification and help improve AI accuracy</p>
+        </div>
+
+        <div class="device-info">
+            <h3>Device Information</h3>
+            <div id="device-details">
+                <p><strong>IP Address:</strong> <span id="device-ip"></span></p>
+                <p><strong>Hostname:</strong> <span id="device-hostname"></span></p>
+                <p><strong>Current Device Type:</strong> <span id="current-device-type"></span></p>
+                <p><strong>Current OS:</strong> <span id="current-os"></span></p>
+                <p><strong>Confidence:</strong> <span id="current-confidence"></span></p>
+                <p><strong>Services:</strong> <span id="device-services"></span></p>
+            </div>
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+
+        <div class="correction-form">
+            <h3>Correct Device Identification</h3>
+            <form id="correction-form">
+                <div class="form-group">
+                    <label for="corrected-device-type">Correct Device Type:</label>
+                    <select id="corrected-device-type" required>
+                        <option value="">Select device type...</option>
+                        <option value="Windows Server">Windows Server</option>
+                        <option value="Linux Server">Linux Server</option>
+                        <option value="Router">Router</option>
+                        <option value="Switch">Switch</option>
+                        <option value="Firewall">Firewall</option>
+                        <option value="IoT Device">IoT Device</option>
+                        <option value="Printer">Printer</option>
+                        <option value="Camera">Camera</option>
+                        <option value="Access Point">Access Point</option>
+                        <option value="NAS">NAS</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="corrected-os">Correct Operating System:</label>
+                    <input type="text" id="corrected-os" placeholder="e.g., Windows Server 2019, Ubuntu 20.04" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="correction-reason">Reason for Correction:</label>
+                    <textarea id="correction-reason" placeholder="Explain why this correction is needed..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="additional-tags">Additional Tags (comma-separated):</label>
+                    <input type="text" id="additional-tags" placeholder="e.g., production, critical, monitored">
+                </div>
+
+                <button type="submit" class="btn">Apply Correction</button>
+                <button type="button" class="btn btn-secondary" onclick="loadPatternSuggestions()">Get AI Suggestions</button>
+            </form>
+        </div>
+
+        <div id="pattern-suggestions" class="pattern-suggestions" style="display: none;">
+            <h3>AI Pattern Suggestions</h3>
+            <div id="pattern-list"></div>
+        </div>
+
+        <div class="correction-history">
+            <h3>Correction History</h3>
+            <div id="correction-history-list">
+                <p>Loading correction history...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const deviceId = new URLSearchParams(window.location.search).get('device_id');
+        const apiBaseUrl = '/api/v1';
+
+        // Load device information
+        async function loadDeviceInfo() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/devices/${deviceId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load device information');
+                }
+                
+                const device = await response.json();
+                
+                document.getElementById('device-ip').textContent = device.ip;
+                document.getElementById('device-hostname').textContent = device.hostname || 'Unknown';
+                document.getElementById('current-device-type').textContent = device.device_type;
+                document.getElementById('current-os').textContent = device.operating_system;
+                document.getElementById('current-confidence').textContent = `${(device.confidence * 100).toFixed(1)}%`;
+                
+                const services = device.services.map(s => `${s.port}/${s.service}`).join(', ');
+                document.getElementById('device-services').textContent = services || 'None detected';
+                
+            } catch (error) {
+                showError('Failed to load device information: ' + error.message);
+            }
+        }
+
+        // Load correction history
+        async function loadCorrectionHistory() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/device-corrections/${deviceId}/corrections`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load correction history');
+                }
+                
+                const data = await response.json();
+                const historyList = document.getElementById('correction-history-list');
+                
+                if (data.corrections.length === 0) {
+                    historyList.innerHTML = '<p>No corrections have been made for this device.</p>';
+                    return;
+                }
+                
+                historyList.innerHTML = data.corrections.map(correction => `
+                    <div class="correction-item">
+                        <div class="correction-meta">
+                            Corrected on ${new Date(correction.applied_at).toLocaleString()}
+                            ${correction.is_verified ? '✓ Verified' : '⏳ Pending verification'}
+                        </div>
+                        <div>
+                            <span class="original">${correction.original.device_type} / ${correction.original.operating_system}</span>
+                            →
+                            <span class="corrected">${correction.corrected.device_type} / ${correction.corrected.operating_system}</span>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <strong>Reason:</strong> ${correction.reason}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                document.getElementById('correction-history-list').innerHTML = 
+                    '<p>Failed to load correction history: ' + error.message + '</p>';
+            }
+        }
+
+        // Load pattern suggestions
+        async function loadPatternSuggestions() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/device-corrections/${deviceId}/apply-patterns`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load pattern suggestions');
+                }
+                
+                const data = await response.json();
+                const patternSuggestions = document.getElementById('pattern-suggestions');
+                const patternList = document.getElementById('pattern-list');
+                
+                if (data.applied_patterns.length === 0) {
+                    patternList.innerHTML = '<p>No pattern suggestions available for this device.</p>';
+                } else {
+                    patternList.innerHTML = data.applied_patterns.map(pattern => `
+                        <div class="pattern-item">
+                            <div><strong>${pattern.type.replace('_', ' ').toUpperCase()}:</strong> ${pattern.pattern}</div>
+                            <div>Suggested: ${pattern.suggested_device_type} / ${pattern.suggested_os}</div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${pattern.confidence * 100}%"></div>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">
+                                Confidence: ${(pattern.confidence * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                patternSuggestions.style.display = 'block';
+                
+            } catch (error) {
+                showError('Failed to load pattern suggestions: ' + error.message);
+            }
+        }
+
+        // Submit correction
+        document.getElementById('correction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                corrected_device_type: document.getElementById('corrected-device-type').value,
+                corrected_operating_system: document.getElementById('corrected-os').value,
+                correction_reason: document.getElementById('correction-reason').value,
+                additional_tags: document.getElementById('additional-tags').value
+                    .split(',')
+                    .map(tag => tag.trim())
+                    .filter(tag => tag.length > 0)
+            };
+            
+            try {
+                const response = await fetch(`${apiBaseUrl}/device-corrections/${deviceId}/correct`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to apply correction');
+                }
+                
+                const result = await response.json();
+                showSuccess('Device correction applied successfully!');
+                
+                // Reload device info and history
+                loadDeviceInfo();
+                loadCorrectionHistory();
+                
+                // Clear form
+                document.getElementById('correction-form').reset();
+                
+            } catch (error) {
+                showError('Failed to apply correction: ' + error.message);
+            }
+        });
+
+        // Utility functions
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        // Initialize page
+        if (!deviceId) {
+            showError('Device ID is required');
+        } else {
+            loadDeviceInfo();
+            loadCorrectionHistory();
+        }
+    </script>
+</body>
+</html>

@@ -295,6 +295,175 @@ Update device notes.
 #### GET /devices/stats/summary
 Get device statistics.
 
+### Device Corrections
+
+#### POST /device-corrections/{device_id}/correct
+Correct device identification.
+
+**Request Body:**
+```json
+{
+  "corrected_device_type": "Windows Server",
+  "corrected_operating_system": "Windows Server 2019",
+  "correction_reason": "AI incorrectly identified as Linux due to SSH service",
+  "additional_tags": ["production", "critical"]
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Device correction applied successfully",
+  "correction": {
+    "correction_id": "uuid",
+    "device_id": "uuid",
+    "original": {
+      "device_type": "Linux Server",
+      "operating_system": "Ubuntu",
+      "confidence": 0.85
+    },
+    "corrected": {
+      "device_type": "Windows Server",
+      "operating_system": "Windows Server 2019",
+      "confidence": 1.0
+    },
+    "reason": "AI incorrectly identified as Linux due to SSH service",
+    "applied_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+#### GET /device-corrections/{device_id}/corrections
+Get correction history for a device.
+
+**Response:**
+```json
+{
+  "device_id": "uuid",
+  "corrections": [
+    {
+      "id": "uuid",
+      "user_id": "uuid",
+      "original": {
+        "device_type": "Linux Server",
+        "operating_system": "Ubuntu",
+        "confidence": 0.85
+      },
+      "corrected": {
+        "device_type": "Windows Server",
+        "operating_system": "Windows Server 2019"
+      },
+      "reason": "AI incorrectly identified as Linux due to SSH service",
+      "applied_at": "2024-01-01T00:00:00Z",
+      "is_verified": true,
+      "verified_by": "uuid"
+    }
+  ],
+  "total_corrections": 1
+}
+```
+
+#### POST /device-corrections/{device_id}/feedback
+Submit feedback on device identification.
+
+**Request Body:**
+```json
+{
+  "feedback_type": "inaccurate",
+  "accuracy_score": 0.3,
+  "device_type_accurate": false,
+  "os_accurate": true,
+  "services_accurate": true,
+  "feedback_comment": "Device type was wrong but OS detection was correct",
+  "suggestions": "Consider Windows-specific banners for identification"
+}
+```
+
+#### POST /device-corrections/{correction_id}/verify
+Verify a device correction (admin only).
+
+**Request Body:**
+```json
+{
+  "feedback_score": 0.9
+}
+```
+
+#### GET /device-corrections/patterns
+Get learned correction patterns.
+
+**Query Parameters:**
+- `pattern_type`: Filter by pattern type (service_pattern, banner_pattern, port_pattern)
+- `limit`: Number of patterns (default: 50)
+- `offset`: Offset for pagination (default: 0)
+
+**Response:**
+```json
+{
+  "patterns": [
+    {
+      "id": "uuid",
+      "pattern_type": "service_pattern",
+      "pattern_key": "ssh",
+      "pattern_value": "OpenSSH 8.2",
+      "correct_device_type": "Linux Server",
+      "correct_operating_system": "Ubuntu 20.04",
+      "confidence_score": 0.95,
+      "usage_count": 15,
+      "success_rate": 0.93,
+      "created_at": "2024-01-01T00:00:00Z",
+      "last_used": "2024-01-15T00:00:00Z"
+    }
+  ],
+  "total_patterns": 1,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+#### POST /device-corrections/{device_id}/apply-patterns
+Apply learned patterns to improve device identification.
+
+**Response:**
+```json
+{
+  "device_id": "uuid",
+  "applied_patterns": [
+    {
+      "type": "service_pattern",
+      "pattern": "ssh",
+      "suggested_device_type": "Linux Server",
+      "suggested_os": "Ubuntu 20.04",
+      "confidence": 0.95
+    }
+  ],
+  "pattern_count": 1
+}
+```
+
+#### GET /device-corrections/stats/corrections
+Get correction statistics.
+
+**Response:**
+```json
+{
+  "total_corrections": 150,
+  "verified_corrections": 120,
+  "verification_rate": 0.8,
+  "total_patterns": 45,
+  "recent_corrections": [
+    {
+      "id": "uuid",
+      "device_id": "uuid",
+      "original_type": "Linux Server",
+      "corrected_type": "Windows Server",
+      "created_at": "2024-01-15T00:00:00Z",
+      "is_verified": true
+    }
+  ]
+}
+```
+
 ### Integrations
 
 #### GET /integrations/

@@ -227,7 +227,9 @@ class DeviceService:
             "tags": device.tags,
             "risk_score": device.risk_score,
             "services": self._extract_services(device),
-            "ai_analysis": device.ai_analysis.__dict__ if device.ai_analysis else None
+            "ai_analysis": device.ai_analysis.__dict__ if device.ai_analysis else None,
+            "has_corrections": getattr(device, 'has_corrections', False),
+            "correction_count": getattr(device, 'correction_count', 0)
         }
     
     def _extract_services(self, device: AggregatedDevice) -> List[Dict[str, Any]]:

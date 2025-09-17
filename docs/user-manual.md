@@ -200,6 +200,58 @@ Timeout: 180 seconds
 - Filter by tags
 - Generate tag-based reports
 
+### Correcting Device Identifications
+
+#### Device Correction Interface
+
+**Accessing Corrections:**
+1. Navigate to device details
+2. Click "Correct Identification" button
+3. Review current AI analysis
+4. Provide corrected information
+
+**Correction Process:**
+1. **Select Correct Device Type**: Choose from predefined categories
+2. **Specify Operating System**: Enter accurate OS information
+3. **Provide Reason**: Explain why the correction is needed
+4. **Add Tags**: Include relevant tags for better organization
+5. **Submit Correction**: Apply the correction to improve future identifications
+
+**Correction Benefits:**
+- Improves AI accuracy over time
+- Creates learning patterns for similar devices
+- Maintains correction history for audit purposes
+- Enables verification by administrators
+
+#### AI Pattern Learning
+
+**Automatic Pattern Extraction:**
+- Service patterns: Common service combinations
+- Banner patterns: Specific service banners
+- Port patterns: Typical port configurations
+
+**Pattern Application:**
+- Automatic suggestions for new devices
+- Confidence scoring for pattern matches
+- Continuous learning from corrections
+- Pattern verification system
+
+#### Feedback System
+
+**Providing Feedback:**
+1. Rate identification accuracy (0-100%)
+2. Specify which aspects were accurate:
+   - Device type identification
+   - Operating system detection
+   - Service identification
+3. Add comments and suggestions
+4. Submit feedback for system improvement
+
+**Feedback Types:**
+- **Accurate**: Identification was correct
+- **Inaccurate**: Significant errors in identification
+- **Partially Accurate**: Some aspects correct, others incorrect
+
 #### Notes and Documentation
 
 **Adding Notes:**

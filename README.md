@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # MalsiftCND - Attack Surface Discovery Tool
 
 A comprehensive enterprise-grade attack surface discovery tool designed for network security professionals and administrators.
@@ -11,6 +10,8 @@ MalsiftCND is an advanced network discovery and attack surface management platfo
 
 - **Multi-Scanner Integration**: Leverages nmap, masscan, and other proven scanning tools
 - **AI-Powered Analysis**: Integrates with LLM APIs (ChatGPT, Anthropic, Grok) for enhanced device identification
+- **Device Correction System**: Correct mis-identifications and improve AI accuracy over time
+- **Pattern Learning**: Automatic extraction and application of identification patterns
 - **Enterprise Integrations**: Connects with RunZero, Tanium, Armis, and Active Directory/Azure AD
 - **Secure Authentication**: Supports local users, AD, and Azure AD with optional MFA
 - **SSL/TLS Support**: LetEncrypt and enterprise certificate support
@@ -62,7 +63,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For enterprise support and questions, please contact: support@malsift.com
-=======
-# MalsiftCND
-Malsift Comprehensive Network Discovery
->>>>>>> 95926507bef762d001d13f470e11a433e996722c

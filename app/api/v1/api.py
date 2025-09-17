@@ -2,7 +2,7 @@
 Main API router
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, scans, devices, integrations, admin
+from app.api.v1.endpoints import auth, scans, devices, integrations, admin, device_corrections
 
 api_router = APIRouter()
 
@@ -10,5 +10,6 @@ api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(scans.router, prefix="/scans", tags=["scans"])
 api_router.include_router(devices.router, prefix="/devices", tags=["devices"])
+api_router.include_router(device_corrections.router, prefix="/device-corrections", tags=["device-corrections"])
 api_router.include_router(integrations.router, prefix="/integrations", tags=["integrations"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

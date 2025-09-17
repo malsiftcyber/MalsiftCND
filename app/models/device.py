@@ -52,5 +52,9 @@ class Device(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Relationships
+    corrections = relationship("DeviceCorrection", back_populates="device")
+    feedback = relationship("DeviceFeedback", back_populates="device")
+    
     def __repr__(self):
         return f"<Device(ip='{self.ip}', type='{self.device_type}', os='{self.operating_system}')>"
