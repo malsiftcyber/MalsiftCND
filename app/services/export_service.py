@@ -44,6 +44,7 @@ class ExportService:
                 'IP Address', 'Hostname', 'Device Type', 'Operating System',
                 'Confidence', 'Risk Score', 'First Seen', 'Last Seen',
                 'Company Name', 'Company Code', 'Site Name', 'Site Code',
+                'EDR Provider', 'EDR Status', 'EDR Risk Score', 'EDR Threat Level',
                 'Tags', 'Notes', 'Is Active'
             ]
             
@@ -60,6 +61,9 @@ class ExportService:
             
             # Write device data
             for device in devices:
+                # Get EDR data
+                edr_data = self._extract_edr_data(device)
+                
                 row = [
                     device.ip,
                     device.hostname or '',
@@ -73,6 +77,10 @@ class ExportService:
                     device.company.code if device.company else '',
                     device.site.name if device.site else '',
                     device.site.code if device.site else '',
+                    edr_data['provider'],
+                    edr_data['status'],
+                    edr_data['risk_score'],
+                    edr_data['threat_level'],
                     '; '.join(device.tags) if device.tags else '',
                     device.notes or '',
                     'Yes' if device.is_active else 'No'
@@ -482,3 +490,24 @@ class ExportService:
             return f"Multiple ({', '.join(scanners).title()})"
         else:
             return "Unknown"
+    
+    def _extract_edr_data(self, device: Device) -> Dict[str, str]:
+        """Extract EDR data from device"""
+        edr_endpoints = device.edr_endpoints
+        if not edr_endpoints:
+            return {
+                'provider': '',
+                'status': '',
+                'risk_score': '',
+                'threat_level': ''
+            }
+        
+        # Get the most recent EDR endpoint
+        latest_endpoint = max(edr_endpoints, key=lambda e: e.last_seen)
+        
+        return {
+            'provider': latest_endpoint.integration.provider.title(),
+            'status': latest_endpoint.agent_status or '',
+            'risk_score': str(latest_endpoint.risk_score) if latest_endpoint.risk_score else '',
+            'threat_level': latest_endpoint.threat_level or ''
+        }

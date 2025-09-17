@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDR Integration Management - MalsiftCND</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .provider-badge {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .crowdstrike { background: #d1ecf1; color: #0c5460; }
+        .microsoft { background: #d4edda; color: #155724; }
+        .sentinelone { background: #f8d7da; color: #721c24; }
+        .trendmicro { background: #fff3cd; color: #856404; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        .status-syncing { background: #fff3cd; color: #856404; }
+        .config-section {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .config-section h4 {
+            margin-top: 0;
+            color: #0056b3;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>EDR Integration Management</h1>
+            <p>Integrate with Endpoint Detection and Response (EDR) platforms for enhanced device identification</p>
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+        <!-- EDR Integrations Section -->
+        <div class="section">
+            <h3>🛡️ EDR Integrations</h3>
+            <p>Manage integrations with CrowdStrike Falcon, Microsoft Defender, SentinelOne, and TrendMicro Vision One</p>
+            
+            <button type="button" class="btn btn-success" onclick="openIntegrationModal()">+ Add EDR Integration</button>
+            
+            <table class="table" id="integrations-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Provider</th>
+                        <th>Status</th>
+                        <th>Last Sync</th>
+                        <th>Endpoints</th>
+                        <th>Alerts</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Integrations will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- EDR Endpoints Section -->
+        <div class="section">
+            <h3>💻 EDR Endpoints</h3>
+            <p>View endpoints discovered through EDR integrations</p>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="endpoint-integration">Integration:</label>
+                    <select id="endpoint-integration">
+                        <option value="">All Integrations</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="endpoint-status">Agent Status:</label>
+                    <select id="endpoint-status">
+                        <option value="">All Statuses</option>
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="button" class="btn" onclick="loadEndpoints()">Load Endpoints</button>
+            
+            <table class="table" id="endpoints-table">
+                <thead>
+                    <tr>
+                        <th>Hostname</th>
+                        <th>IP Addresses</th>
+                        <th>OS</th>
+                        <th>Agent Status</th>
+                        <th>Risk Score</th>
+                        <th>Threat Level</th>
+                        <th>Last Seen</th>
+                        <th>Provider</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Endpoints will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- EDR Alerts Section -->
+        <div class="section">
+            <h3>🚨 EDR Alerts</h3>
+            <p>View security alerts from EDR integrations</p>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="alert-integration">Integration:</label>
+                    <select id="alert-integration">
+                        <option value="">All Integrations</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alert-severity">Severity:</label>
+                    <select id="alert-severity">
+                        <option value="">All Severities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="button" class="btn" onclick="loadAlerts()">Load Alerts</button>
+            
+            <table class="table" id="alerts-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Threat Type</th>
+                        <th>Detected At</th>
+                        <th>Provider</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Alerts will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Integration Modal -->
+    <div id="integration-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeIntegrationModal()">&times;</span>
+            <h3 id="integration-modal-title">Add EDR Integration</h3>
+            
+            <form id="integration-form">
+                <div class="form-group">
+                    <label for="integration-name">Integration Name:</label>
+                    <input type="text" id="integration-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="integration-provider">EDR Provider:</label>
+                    <select id="integration-provider" required onchange="updateProviderFields()">
+                        <option value="">Select Provider</option>
+                        <option value="crowdstrike">CrowdStrike Falcon</option>
+                        <option value="microsoft_defender">Microsoft Defender for Endpoint</option>
+                        <option value="sentinelone">SentinelOne</option>
+                        <option value="trendmicro">TrendMicro Vision One</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="integration-api-url">API Base URL:</label>
+                    <input type="url" id="integration-api-url" required>
+                    <div class="help-text">Base URL for the EDR API (e.g., https://api.crowdstrike.com)</div>
+                </div>
+                
+                <div class="config-section">
+                    <h4>Authentication Configuration</h4>
+                    
+                    <div class="form-group">
+                        <label for="integration-auth-type">Authentication Type:</label>
+                        <select id="integration-auth-type" onchange="updateAuthFields()">
+                            <option value="api_key">API Key</option>
+                            <option value="oauth">OAuth</option>
+                        </select>
+                    </div>
+                    
+                    <div id="oauth-fields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="integration-client-id">Client ID:</label>
+                                <input type="text" id="integration-client-id">
+                            </div>
+                            <div class="form-group">
+                                <label for="integration-client-secret">Client Secret:</label>
+                                <input type="password" id="integration-client-secret">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="integration-tenant-id">Tenant ID (Microsoft only):</label>
+                            <input type="text" id="integration-tenant-id">
+                        </div>
+                    </div>
+                    
+                    <div id="api-key-fields">
+                        <div class="form-group">
+                            <label for="integration-api-key">API Key:</label>
+                            <input type="password" id="integration-api-key">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <h4>Sync Configuration</h4>
+                    
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sync-endpoints" checked>
+                            <label for="sync-endpoints">Sync Endpoints</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sync-alerts">
+                            <label for="sync-alerts">Sync Alerts</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sync-vulnerabilities">
+                            <label for="sync-vulnerabilities">Sync Vulnerabilities</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sync-network">
+                            <label for="sync-network">Sync Network Connections</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sync-interval">Sync Interval (minutes):</label>
+                        <input type="number" id="sync-interval" value="60" min="5" max="1440">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="integration-description">Description:</label>
+                    <textarea id="integration-description"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Save Integration</button>
+                <button type="button" class="btn btn-secondary" onclick="closeIntegrationModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const apiBaseUrl = '/api/v1';
+        let currentIntegrationId = null;
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadIntegrations();
+        });
+
+        // Integration Management
+        async function loadIntegrations() {
+            try {
+                showLoading(true);
+                const response = await fetch(`${apiBaseUrl}/edr/integrations`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load integrations');
+                }
+                
+                const integrations = await response.json();
+                displayIntegrations(integrations);
+                
+                // Update dropdowns
+                updateIntegrationDropdowns(integrations);
+                
+            } catch (error) {
+                showError('Failed to load integrations: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayIntegrations(integrations) {
+            const tbody = document.querySelector('#integrations-table tbody');
+            tbody.innerHTML = '';
+            
+            integrations.forEach(integration => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${integration.name}</td>
+                    <td><span class="provider-badge ${integration.provider}">${integration.provider.replace('_', ' ').toUpperCase()}</span></td>
+                    <td><span class="status-badge status-${integration.is_active ? 'active' : 'inactive'}">${integration.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${integration.last_sync ? new Date(integration.last_sync).toLocaleString() : 'Never'}</td>
+                    <td>${integration.endpoints_count || 0}</td>
+                    <td>${integration.alerts_count || 0}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editIntegration('${integration.id}')">Edit</button>
+                        <button class="btn btn-warning" onclick="testIntegration('${integration.id}')">Test</button>
+                        <button class="btn btn-success" onclick="syncIntegration('${integration.id}')">Sync</button>
+                        <button class="btn btn-danger" onclick="deleteIntegration('${integration.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateIntegrationDropdowns(integrations) {
+            const dropdowns = ['endpoint-integration', 'alert-integration'];
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                dropdown.innerHTML = '<option value="">All Integrations</option>';
+                integrations.forEach(integration => {
+                    const option = document.createElement('option');
+                    option.value = integration.id;
+                    option.textContent = integration.name;
+                    dropdown.appendChild(option);
+                });
+            });
+        }
+
+        function openIntegrationModal(integrationId = null) {
+            currentIntegrationId = integrationId;
+            const modal = document.getElementById('integration-modal');
+            const title = document.getElementById('integration-modal-title');
+            const form = document.getElementById('integration-form');
+            
+            if (integrationId) {
+                title.textContent = 'Edit EDR Integration';
+                loadIntegrationForEdit(integrationId);
+            } else {
+                title.textContent = 'Add EDR Integration';
+                form.reset();
+                updateProviderFields();
+                updateAuthFields();
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeIntegrationModal() {
+            document.getElementById('integration-modal').style.display = 'none';
+            currentIntegrationId = null;
+        }
+
+        function updateProviderFields() {
+            const provider = document.getElementById('integration-provider').value;
+            const apiUrlField = document.getElementById('integration-api-url');
+            
+            // Set default API URLs
+            const defaultUrls = {
+                'crowdstrike': 'https://api.crowdstrike.com',
+                'microsoft_defender': 'https://graph.microsoft.com',
+                'sentinelone': 'https://your-instance.sentinelone.net',
+                'trendmicro': 'https://api.xdr.trendmicro.com'
+            };
+            
+            if (defaultUrls[provider]) {
+                apiUrlField.value = defaultUrls[provider];
+            }
+            
+            updateAuthFields();
+        }
+
+        function updateAuthFields() {
+            const provider = document.getElementById('integration-provider').value;
+            const authType = document.getElementById('integration-auth-type').value;
+            const oauthFields = document.getElementById('oauth-fields');
+            const apiKeyFields = document.getElementById('api-key-fields');
+            
+            // Show/hide auth fields based on type
+            if (authType === 'oauth') {
+                oauthFields.style.display = 'block';
+                apiKeyFields.style.display = 'none';
+            } else {
+                oauthFields.style.display = 'none';
+                apiKeyFields.style.display = 'block';
+            }
+            
+            // Set default auth type based on provider
+            if (provider === 'crowdstrike' || provider === 'microsoft_defender') {
+                document.getElementById('integration-auth-type').value = 'oauth';
+                oauthFields.style.display = 'block';
+                apiKeyFields.style.display = 'none';
+            } else {
+                document.getElementById('integration-auth-type').value = 'api_key';
+                oauthFields.style.display = 'none';
+                apiKeyFields.style.display = 'block';
+            }
+        }
+
+        async function loadIntegrationForEdit(integrationId) {
+            try {
+                const response = await fetch(`${apiBaseUrl}/edr/integrations/${integrationId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load integration');
+                }
+                
+                const integration = await response.json();
+                
+                document.getElementById('integration-name').value = integration.name;
+                document.getElementById('integration-provider').value = integration.provider;
+                document.getElementById('integration-api-url').value = integration.api_base_url;
+                document.getElementById('integration-auth-type').value = integration.auth_type;
+                document.getElementById('integration-client-id').value = integration.client_id || '';
+                document.getElementById('integration-client-secret').value = '';
+                document.getElementById('integration-tenant-id').value = integration.tenant_id || '';
+                document.getElementById('integration-api-key').value = '';
+                document.getElementById('sync-endpoints').checked = integration.sync_endpoints;
+                document.getElementById('sync-alerts').checked = integration.sync_alerts;
+                document.getElementById('sync-vulnerabilities').checked = integration.sync_vulnerabilities;
+                document.getElementById('sync-network').checked = integration.sync_network_connections;
+                document.getElementById('sync-interval').value = integration.sync_interval_minutes;
+                document.getElementById('integration-description').value = integration.description || '';
+                
+                updateAuthFields();
+                
+            } catch (error) {
+                showError('Failed to load integration: ' + error.message);
+            }
+        }
+
+        document.getElementById('integration-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('integration-name').value,
+                provider: document.getElementById('integration-provider').value,
+                api_base_url: document.getElementById('integration-api-url').value,
+                auth_type: document.getElementById('integration-auth-type').value,
+                client_id: document.getElementById('integration-client-id').value,
+                client_secret: document.getElementById('integration-client-secret').value,
+                tenant_id: document.getElementById('integration-tenant-id').value,
+                api_key: document.getElementById('integration-api-key').value,
+                sync_endpoints: document.getElementById('sync-endpoints').checked,
+                sync_alerts: document.getElementById('sync-alerts').checked,
+                sync_vulnerabilities: document.getElementById('sync-vulnerabilities').checked,
+                sync_network_connections: document.getElementById('sync-network').checked,
+                sync_interval_minutes: parseInt(document.getElementById('sync-interval').value),
+                description: document.getElementById('integration-description').value
+            };
+            
+            try {
+                showLoading(true);
+                
+                const url = currentIntegrationId 
+                    ? `${apiBaseUrl}/edr/integrations/${currentIntegrationId}`
+                    : `${apiBaseUrl}/edr/integrations`;
+                
+                const method = currentIntegrationId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to save integration');
+                }
+                
+                showSuccess(currentIntegrationId ? 'Integration updated successfully' : 'Integration created successfully');
+                closeIntegrationModal();
+                loadIntegrations();
+                
+            } catch (error) {
+                showError('Failed to save integration: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        async function editIntegration(integrationId) {
+            openIntegrationModal(integrationId);
+        }
+
+        async function testIntegration(integrationId) {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${apiBaseUrl}/edr/integrations/${integrationId}/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Test failed');
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showSuccess(`Integration test successful! Authentication: ${result.authentication}, Endpoints accessible: ${result.endpoints_accessible}`);
+                } else {
+                    showError(`Integration test failed: ${result.error}`);
+                }
+                
+            } catch (error) {
+                showError('Failed to test integration: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function syncIntegration(integrationId) {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${apiBaseUrl}/edr/integrations/${integrationId}/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Sync failed');
+                }
+                
+                const result = await response.json();
+                showSuccess(`Sync completed! Processed: ${result.records_processed}, Created: ${result.records_created}, Updated: ${result.records_updated}`);
+                loadIntegrations();
+                
+            } catch (error) {
+                showError('Failed to sync integration: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deleteIntegration(integrationId) {
+            if (!confirm('Are you sure you want to delete this integration?')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${apiBaseUrl}/edr/integrations/${integrationId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete integration');
+                }
+                
+                showSuccess('Integration deleted successfully');
+                loadIntegrations();
+                
+            } catch (error) {
+                showError('Failed to delete integration: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Endpoint Management
+        async function loadEndpoints() {
+            try {
+                showLoading(true);
+                
+                const integrationId = document.getElementById('endpoint-integration').value;
+                const status = document.getElementById('endpoint-status').value;
+                
+                let url = `${apiBaseUrl}/edr/integrations/${integrationId}/endpoints`;
+                if (integrationId) {
+                    url = `${apiBaseUrl}/edr/integrations/${integrationId}/endpoints`;
+                } else {
+                    // Load from all integrations
+                    url = `${apiBaseUrl}/edr/integrations`;
+                }
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load endpoints');
+                }
+                
+                const data = await response.json();
+                displayEndpoints(data);
+                
+            } catch (error) {
+                showError('Failed to load endpoints: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayEndpoints(endpoints) {
+            const tbody = document.querySelector('#endpoints-table tbody');
+            tbody.innerHTML = '';
+            
+            endpoints.forEach(endpoint => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${endpoint.hostname || endpoint.edr_hostname || 'Unknown'}</td>
+                    <td>${Array.isArray(endpoint.edr_ip_addresses) ? endpoint.edr_ip_addresses.join(', ') : endpoint.edr_ip_addresses || 'Unknown'}</td>
+                    <td>${endpoint.operating_system || 'Unknown'}</td>
+                    <td><span class="status-badge status-${endpoint.agent_status || 'unknown'}">${endpoint.agent_status || 'Unknown'}</span></td>
+                    <td>${endpoint.risk_score || 'N/A'}</td>
+                    <td>${endpoint.threat_level || 'N/A'}</td>
+                    <td>${endpoint.last_seen_by_agent ? new Date(endpoint.last_seen_by_agent).toLocaleString() : 'Never'}</td>
+                    <td>${endpoint.provider || 'Unknown'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Alert Management
+        async function loadAlerts() {
+            try {
+                showLoading(true);
+                
+                const integrationId = document.getElementById('alert-integration').value;
+                const severity = document.getElementById('alert-severity').value;
+                
+                let url = `${apiBaseUrl}/edr/integrations/${integrationId}/alerts`;
+                if (integrationId) {
+                    url = `${apiBaseUrl}/edr/integrations/${integrationId}/alerts`;
+                } else {
+                    // Load from all integrations
+                    url = `${apiBaseUrl}/edr/integrations`;
+                }
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load alerts');
+                }
+                
+                const data = await response.json();
+                displayAlerts(data);
+                
+            } catch (error) {
+                showError('Failed to load alerts: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayAlerts(alerts) {
+            const tbody = document.querySelector('#alerts-table tbody');
+            tbody.innerHTML = '';
+            
+            alerts.forEach(alert => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${alert.title || 'Unknown'}</td>
+                    <td><span class="status-badge status-${alert.severity || 'unknown'}">${alert.severity || 'Unknown'}</span></td>
+                    <td><span class="status-badge status-${alert.status || 'unknown'}">${alert.status || 'Unknown'}</span></td>
+                    <td>${alert.threat_type || 'Unknown'}</td>
+                    <td>${alert.detected_at ? new Date(alert.detected_at).toLocaleString() : 'Unknown'}</td>
+                    <td>${alert.provider || 'Unknown'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Utility Functions
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('integration-modal');
+            if (event.target === modal) {
+                closeIntegrationModal();
+            }
+        }
+    </script>
+</body>
+</html>

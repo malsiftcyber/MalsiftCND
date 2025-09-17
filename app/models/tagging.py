@@ -30,6 +30,8 @@ class Company(Base):
     devices = relationship("Device", back_populates="company")
     scans = relationship("Scan", back_populates="company")
     users = relationship("User", back_populates="company")
+    edr_integrations = relationship("EDRIntegration", back_populates="company")
+    edr_endpoints = relationship("EDREndpoint", back_populates="company")
 
 
 class Site(Base):
@@ -55,6 +57,8 @@ class Site(Base):
     company = relationship("Company", back_populates="sites")
     devices = relationship("Device", back_populates="site")
     scans = relationship("Scan", back_populates="site")
+    edr_integrations = relationship("EDRIntegration", back_populates="site")
+    edr_endpoints = relationship("EDREndpoint", back_populates="site")
 
 
 class DeviceTag(Base):

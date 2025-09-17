@@ -62,6 +62,7 @@ class Device(Base):
     device_tags = relationship("DeviceTag", back_populates="device")
     company = relationship("Company", back_populates="devices")
     site = relationship("Site", back_populates="devices")
+    edr_endpoints = relationship("EDREndpoint", back_populates="device")
     
     def __repr__(self):
         return f"<Device(ip='{self.ip}', type='{self.device_type}', os='{self.operating_system}')>"

@@ -397,6 +397,109 @@ All CSV exports now include:
 - Export devices by custom tag values
 - Multi-company reports for MSPs
 
+## EDR Integration
+
+### Endpoint Detection and Response Integration
+
+**EDR Platform Support:**
+MalsiftCND integrates with leading EDR platforms to enhance device identification accuracy and provide real-time endpoint data.
+
+**Supported EDR Platforms:**
+- **CrowdStrike Falcon**: Industry-leading EDR platform
+- **Microsoft Defender for Endpoint**: Microsoft's comprehensive security solution
+- **SentinelOne**: Advanced endpoint protection platform
+- **TrendMicro Vision One**: Extended detection and response platform
+
+**Integration Benefits:**
+- **Enhanced Accuracy**: Agent-based data provides precise device information
+- **Real-time Data**: Live endpoint status and security posture
+- **Threat Intelligence**: Security alerts and threat detection
+- **Compliance Data**: Endpoint compliance and risk scoring
+- **Network Visibility**: Network connections and communication patterns
+
+### EDR Integration Setup
+
+**Creating EDR Integrations:**
+1. Navigate to EDR Integration Management
+2. Click "Add EDR Integration"
+3. Configure integration details:
+   - **Integration Name**: Descriptive name for the integration
+   - **EDR Provider**: Select from supported platforms
+   - **API Configuration**: API URL and authentication details
+   - **Sync Settings**: Configure data synchronization options
+
+**Authentication Configuration:**
+- **OAuth (CrowdStrike, Microsoft Defender)**: Client ID, Client Secret, Tenant ID
+- **API Key (SentinelOne, TrendMicro)**: API key authentication
+- **Bearer Token**: Token-based authentication
+
+**Sync Configuration:**
+- **Sync Endpoints**: Import device/endpoint data
+- **Sync Alerts**: Import security alerts and incidents
+- **Sync Vulnerabilities**: Import vulnerability data
+- **Sync Network Connections**: Import network communication data
+- **Sync Interval**: Configure automatic sync frequency (5-1440 minutes)
+
+### EDR Data Integration
+
+**Endpoint Data:**
+- **Device Information**: Hostname, IP addresses, MAC addresses
+- **Operating System**: OS type, version, architecture
+- **Hardware Details**: Processor, memory, disk space
+- **Agent Status**: Online/offline status, agent version
+- **Security Posture**: Risk score, threat level, compliance status
+
+**Alert Data:**
+- **Security Alerts**: Threat detection and incident data
+- **Threat Intelligence**: Threat names, types, and categories
+- **Severity Levels**: Low, medium, high, critical classifications
+- **Timeline Data**: Detection and resolution timestamps
+
+**Data Normalization:**
+- **Standardized Format**: Consistent data structure across platforms
+- **Field Mapping**: Automatic mapping of EDR-specific fields
+- **Data Enrichment**: Enhanced device information from EDR sources
+- **Conflict Resolution**: Handling of conflicting data from multiple sources
+
+### EDR Management
+
+**Integration Testing:**
+- **Connectivity Test**: Verify API connectivity and authentication
+- **Data Access Test**: Confirm endpoint and alert data access
+- **Sync Test**: Test data synchronization functionality
+
+**Manual Synchronization:**
+- **On-demand Sync**: Manually trigger data synchronization
+- **Selective Sync**: Sync specific data types (endpoints, alerts, etc.)
+- **Sync Monitoring**: Monitor sync progress and results
+
+**Integration Monitoring:**
+- **Sync Logs**: View synchronization history and status
+- **Error Tracking**: Monitor sync failures and errors
+- **Performance Metrics**: Track sync duration and data volumes
+- **Health Status**: Monitor integration health and connectivity
+
+### EDR Data in Exports
+
+**Enhanced CSV Exports:**
+All device exports now include EDR data:
+- **EDR Provider**: Source EDR platform
+- **EDR Status**: Agent status (online/offline/error)
+- **EDR Risk Score**: EDR-calculated risk score
+- **EDR Threat Level**: Current threat level assessment
+
+**EDR-Specific Exports:**
+- **Endpoint Export**: Complete endpoint data from EDR platforms
+- **Alert Export**: Security alerts and incident data
+- **Compliance Export**: Endpoint compliance and risk data
+- **Network Export**: Network connection and communication data
+
+**Data Correlation:**
+- **Device Matching**: Automatic matching of EDR endpoints with discovered devices
+- **Data Enrichment**: Enhanced device information from EDR sources
+- **Conflict Resolution**: Handling of data conflicts between sources
+- **Unified View**: Combined view of network discovery and EDR data
+
 ## Scan Scheduling
 
 ### Automated Discovery Scans

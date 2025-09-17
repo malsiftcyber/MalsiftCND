@@ -706,6 +706,246 @@ Tag a scan with company, site, and custom tags.
 #### GET /tagging/scans/{scan_id}/tags
 Get all tags for a scan.
 
+### EDR Integration
+
+#### POST /edr/integrations
+Create a new EDR integration.
+
+**Request Body:**
+```json
+{
+  "name": "CrowdStrike Production",
+  "provider": "crowdstrike",
+  "api_base_url": "https://api.crowdstrike.com",
+  "client_id": "your_client_id",
+  "client_secret": "your_client_secret",
+  "auth_type": "oauth",
+  "sync_enabled": true,
+  "sync_interval_minutes": 60,
+  "sync_endpoints": true,
+  "sync_alerts": false,
+  "sync_vulnerabilities": false,
+  "sync_network_connections": false,
+  "company_id": "uuid",
+  "site_id": "uuid",
+  "description": "Production CrowdStrike integration"
+}
+```
+
+#### GET /edr/integrations
+List all EDR integrations.
+
+**Query Parameters:**
+- `active_only`: Show only active integrations (default: true)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "CrowdStrike Production",
+    "provider": "crowdstrike",
+    "api_base_url": "https://api.crowdstrike.com",
+    "auth_type": "oauth",
+    "is_active": true,
+    "sync_enabled": true,
+    "sync_interval_minutes": 60,
+    "sync_endpoints": true,
+    "sync_alerts": false,
+    "last_sync": "2024-01-15T10:30:00Z",
+    "next_sync": "2024-01-15T11:30:00Z",
+    "company_id": "uuid",
+    "site_id": "uuid",
+    "description": "Production CrowdStrike integration",
+    "created_at": "2024-01-15T00:00:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### GET /edr/integrations/{integration_id}
+Get EDR integration by ID.
+
+#### PUT /edr/integrations/{integration_id}
+Update EDR integration.
+
+#### DELETE /edr/integrations/{integration_id}
+Delete EDR integration (soft delete).
+
+#### POST /edr/integrations/{integration_id}/test
+Test EDR integration connectivity.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "authentication": "success",
+  "endpoints_accessible": true,
+  "endpoint_count": 150
+}
+```
+
+#### POST /edr/integrations/{integration_id}/sync
+Manually sync EDR integration.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "records_processed": 150,
+  "records_created": 5,
+  "records_updated": 145,
+  "records_failed": 0,
+  "duration_seconds": 45
+}
+```
+
+#### GET /edr/integrations/{integration_id}/endpoints
+Get endpoints from EDR integration.
+
+**Query Parameters:**
+- `limit`: Number of endpoints to return (default: 100)
+- `offset`: Number of endpoints to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "edr_endpoint_id": "edr_12345",
+    "edr_hostname": "workstation-01",
+    "edr_ip_addresses": ["192.168.1.100"],
+    "hostname": "workstation-01",
+    "operating_system": "Windows 10",
+    "os_version": "10.0.19042",
+    "architecture": "x64",
+    "processor": "Intel Core i7",
+    "memory_gb": 16.0,
+    "mac_addresses": ["00:11:22:33:44:55"],
+    "agent_version": "6.45.0",
+    "agent_status": "online",
+    "last_seen_by_agent": "2024-01-15T10:30:00Z",
+    "risk_score": 7.5,
+    "threat_level": "medium",
+    "compliance_status": "compliant",
+    "edr_tags": ["production", "workstation"],
+    "edr_groups": ["Workstations"],
+    "device_id": "uuid",
+    "company_id": "uuid",
+    "site_id": "uuid",
+    "first_seen": "2024-01-15T00:00:00Z",
+    "last_seen": "2024-01-15T10:30:00Z",
+    "last_updated": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### GET /edr/integrations/{integration_id}/alerts
+Get alerts from EDR integration.
+
+**Query Parameters:**
+- `limit`: Number of alerts to return (default: 100)
+- `offset`: Number of alerts to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "edr_alert_id": "alert_12345",
+    "edr_incident_id": "incident_67890",
+    "alert_type": "Malware Detection",
+    "severity": "high",
+    "status": "open",
+    "title": "Malware Detected on Workstation",
+    "description": "Suspicious file detected and quarantined",
+    "threat_name": "Trojan.Generic",
+    "threat_type": "malware",
+    "threat_category": "trojan",
+    "ioc_count": 3,
+    "detected_at": "2024-01-15T10:30:00Z",
+    "resolved_at": null,
+    "endpoint_id": "uuid",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### GET /edr/integrations/{integration_id}/sync-logs
+Get sync logs for EDR integration.
+
+**Query Parameters:**
+- `limit`: Number of logs to return (default: 50)
+- `offset`: Number of logs to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "sync_type": "endpoints",
+    "status": "success",
+    "started_at": "2024-01-15T10:30:00Z",
+    "completed_at": "2024-01-15T10:31:00Z",
+    "duration_seconds": 60,
+    "records_processed": 150,
+    "records_created": 5,
+    "records_updated": 145,
+    "records_failed": 0,
+    "error_message": null,
+    "error_details": null
+  }
+]
+```
+
+#### GET /edr/providers
+Get available EDR providers and their configuration requirements.
+
+**Response:**
+```json
+{
+  "providers": [
+    {
+      "name": "CrowdStrike Falcon",
+      "value": "crowdstrike",
+      "description": "CrowdStrike Falcon EDR platform",
+      "auth_types": ["oauth"],
+      "required_fields": ["api_base_url", "client_id", "client_secret"],
+      "optional_fields": ["tenant_id"],
+      "api_documentation": "https://falcon.crowdstrike.com/documentation"
+    },
+    {
+      "name": "Microsoft Defender for Endpoint",
+      "value": "microsoft_defender",
+      "description": "Microsoft Defender for Endpoint EDR platform",
+      "auth_types": ["oauth"],
+      "required_fields": ["tenant_id", "client_id", "client_secret"],
+      "optional_fields": [],
+      "api_documentation": "https://docs.microsoft.com/en-us/microsoft-365/security/defender-endpoint/"
+    },
+    {
+      "name": "SentinelOne",
+      "value": "sentinelone",
+      "description": "SentinelOne EDR platform",
+      "auth_types": ["api_key"],
+      "required_fields": ["api_base_url", "client_id", "client_secret"],
+      "optional_fields": [],
+      "api_documentation": "https://usea1-partners.sentinelone.net/api-doc/"
+    },
+    {
+      "name": "TrendMicro Vision One",
+      "value": "trendmicro",
+      "description": "TrendMicro Vision One EDR platform",
+      "auth_types": ["api_key"],
+      "required_fields": ["api_base_url", "api_key"],
+      "optional_fields": [],
+      "api_documentation": "https://automation.trendmicro.com/vision-one/api"
+    }
+  ]
+}
+```
+
 ### Scheduling
 
 #### GET /scheduling/schedules
