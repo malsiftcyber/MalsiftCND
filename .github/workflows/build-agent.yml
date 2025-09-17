@@ -32,9 +32,21 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyinstaller psutil aiohttp
     
+    - name: Install NSIS
+      run: |
+        choco install nsis -y
+    
+    - name: Install WiX Toolset
+      run: |
+        choco install wixtoolset -y
+    
     - name: Build Windows agent
       run: |
         python scripts/build_agent.py
+    
+    - name: Build Windows installers
+      run: |
+        python scripts/build_windows_installers.py
     
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v3
@@ -42,6 +54,11 @@ jobs:
         name: malsift-agent-windows
         path: |
           dist/malsift-agent-windows-*.exe
+          dist/windows/malsift-agent-installer.exe
+          dist/windows/MalsiftCND Discovery Agent.msi
+          dist/windows/malsift-agent-standalone.exe
+          dist/windows/install-agent.bat
+          dist/windows/uninstall-agent.bat
           installers/install-windows-*.bat
 
   build-linux:

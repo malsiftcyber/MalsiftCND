@@ -557,14 +557,107 @@ class MalsiftAgent:
             self.scan_task.cancel()
 
 
+def install_windows_service():
+    """Install as Windows Service"""
+    try:
+        import win32serviceutil
+        import win32service
+        import win32event
+        import servicemanager
+        
+        class MalsiftAgentService(win32serviceutil.ServiceFramework):
+            _svc_name_ = "MalsiftCND Agent"
+            _svc_display_name_ = "MalsiftCND Discovery Agent"
+            _svc_description_ = "MalsiftCND Network Discovery Agent"
+            
+            def __init__(self, args):
+                win32serviceutil.ServiceFramework.__init__(self, args)
+                self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
+                self.agent = None
+            
+            def SvcStop(self):
+                self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+                win32event.SetEvent(self.hWaitStop)
+                if self.agent:
+                    self.agent.running = False
+            
+            def SvcDoRun(self):
+                servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,
+                                    servicemanager.PYS_SERVICE_STARTED,
+                                    (self._svc_name_, ''))
+                try:
+                    self.agent = MalsiftAgent()
+                    asyncio.run(self.agent.start())
+                except Exception as e:
+                    servicemanager.LogErrorMsg(f"Service error: {e}")
+        
+        win32serviceutil.HandleCommandLine(MalsiftAgentService)
+        
+    except ImportError:
+        print("Error: pywin32 not installed. Cannot install Windows Service.")
+        print("Install with: pip install pywin32")
+        return False
+    except Exception as e:
+        print(f"Error installing Windows Service: {e}")
+        return False
+    
+    return True
+
+
+def uninstall_windows_service():
+    """Uninstall Windows Service"""
+    try:
+        import win32serviceutil
+        
+        class MalsiftAgentService(win32serviceutil.ServiceFramework):
+            _svc_name_ = "MalsiftCND Agent"
+        
+        win32serviceutil.HandleCommandLine(MalsiftAgentService)
+        
+    except ImportError:
+        print("Error: pywin32 not installed. Cannot uninstall Windows Service.")
+        return False
+    except Exception as e:
+        print(f"Error uninstalling Windows Service: {e}")
+        return False
+    
+    return True
+
+
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description='MalsiftCND Discovery Agent')
     parser.add_argument('--config', '-c', help='Configuration file path')
     parser.add_argument('--version', '-v', action='version', version='MalsiftCND Agent 1.0.0')
+    parser.add_argument('--install-service', action='store_true', help='Install as Windows Service')
+    parser.add_argument('--uninstall-service', action='store_true', help='Uninstall Windows Service')
     
     args = parser.parse_args()
     
+    # Handle Windows Service installation/uninstallation
+    if args.install_service:
+        if platform.system().lower() == 'windows':
+            if install_windows_service():
+                print("Windows Service installed successfully")
+            else:
+                sys.exit(1)
+        else:
+            print("Windows Service installation only supported on Windows")
+            sys.exit(1)
+        return
+    
+    if args.uninstall_service:
+        if platform.system().lower() == 'windows':
+            if uninstall_windows_service():
+                print("Windows Service uninstalled successfully")
+            else:
+                sys.exit(1)
+        else:
+            print("Windows Service uninstallation only supported on Windows")
+            sys.exit(1)
+        return
+    
+    # Run as regular application
     agent = MalsiftAgent(args.config)
     
     try:

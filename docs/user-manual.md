@@ -696,9 +696,38 @@ MalsiftCND includes a comprehensive cross-platform discovery agent system that c
 ### Agent Installation
 
 **Windows Installation:**
-1. Download the Windows agent installer from GitHub releases
+Multiple installer options are available for Windows:
+
+**Option 1: NSIS Installer (.exe)**
+1. Download `malsift-agent-installer.exe` from GitHub releases
 2. Run the installer as Administrator
+3. Follow the installation wizard
+4. Configure the agent with your server URL
+5. The agent installs as a Windows Service and starts automatically
+
+**Option 2: MSI Installer (.msi)**
+1. Download `MalsiftCND Discovery Agent.msi` from GitHub releases
+2. Run the MSI installer as Administrator
+3. Follow the installation wizard
+4. Configure the agent with your server URL
+5. The agent installs as a Windows Service and starts automatically
+
+**Option 3: Standalone Executable**
+1. Download `malsift-agent-standalone.exe` from GitHub releases
+2. Run the executable directly
 3. Configure the agent with your server URL
+4. Install as Windows Service using `--install-service` flag
+
+**Option 4: PowerShell Installer**
+1. Download `install-agent.ps1` from GitHub releases
+2. Run PowerShell as Administrator
+3. Execute: `.\install-agent.ps1 -ServerUrl "https://your-server.com"`
+4. The agent installs as a Windows Service and starts automatically
+
+**Option 5: Batch Installer**
+1. Download `install-agent.bat` from GitHub releases
+2. Run the batch file as Administrator
+3. Follow the installation prompts
 4. The agent installs as a Windows Service and starts automatically
 
 **Linux Installation:**
