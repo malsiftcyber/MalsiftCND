@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MalsiftCND - Attack Surface Discovery Tool
 
 A comprehensive enterprise-grade attack surface discovery tool designed for network security professionals and administrators.
@@ -61,3 +62,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For enterprise support and questions, please contact: support@malsift.com
+=======
+# MalsiftCND
+Malsift Comprehensive Network Discovery
+>>>>>>> 95926507bef762d001d13f470e11a433e996722c
