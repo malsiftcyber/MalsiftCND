@@ -49,7 +49,15 @@ cd MalsiftCND
 ./scripts/install-prerequisites-ubuntu.sh
 ```
 
-**Option 3: Manual Installation**:
+**Option 3: Simple Installation (No PPA)**:
+```bash
+# Download and run the simple installation script (uses system Python 3.12)
+wget https://raw.githubusercontent.com/malsiftcyber/MalsiftCND/main/scripts/install-prerequisites-ubuntu-simple.sh
+chmod +x install-prerequisites-ubuntu-simple.sh
+./install-prerequisites-ubuntu-simple.sh
+```
+
+**Option 4: Manual Installation**:
 Follow the detailed instructions in the [Installation Guide](docs/installation.md)
 
 **MalsiftCND Installation**:

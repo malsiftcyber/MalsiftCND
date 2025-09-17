@@ -1,6 +1,6 @@
 #!/bin/bash
 # MalsiftCND Prerequisites Installation Script for Ubuntu 24.04 LTS
-# This script installs all required system components for MalsiftCND
+# Simple version using system Python 3.12 (no PPA required)
 
 set -e
 
@@ -90,51 +90,19 @@ install_docker() {
     print_warning "You need to logout and login again for Docker group membership to take effect"
 }
 
-# Function to install Docker Compose standalone (alternative)
-install_docker_compose_standalone() {
-    if command_exists docker-compose; then
-        print_warning "Docker Compose standalone is already installed"
-        docker-compose --version
-        return
-    fi
-
-    print_status "Installing Docker Compose standalone..."
-    
-    # Install Docker Compose standalone
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-    
-    print_success "Docker Compose standalone installed successfully"
-}
-
-# Function to install Python 3.11
+# Function to install Python (system default)
 install_python() {
-    if command_exists python3.11; then
-        print_warning "Python 3.11 is already installed"
-        python3.11 --version
-        return
-    fi
-
-    print_status "Installing Python 3.11..."
+    print_status "Installing Python and development tools..."
     
-    # Add deadsnakes PPA for Python 3.11
-    sudo apt install -y software-properties-common
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt update
+    # Install Python 3.12 (default in Ubuntu 24.04) and development tools
+    sudo apt install -y python3 python3-venv python3-dev python3-pip python3-distutils
+    sudo apt install -y build-essential libssl-dev libffi-dev
     
-    # Install Python 3.11 and related packages
-    sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
-    sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
+    # Verify Python installation
+    python3 --version
+    pip3 --version
     
-    # Install pip for Python 3.11
-    sudo apt install -y python3-pip
-    sudo python3.11 -m ensurepip --upgrade
-    
-    # Create symlinks for easier access
-    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-    sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
-    
-    print_success "Python 3.11 installed successfully"
+    print_success "Python installed successfully"
 }
 
 # Function to install PostgreSQL
@@ -207,18 +175,18 @@ verify_installations() {
         print_warning "Docker Compose plugin not available"
     fi
     
-    echo "Docker Compose Standalone:"
-    if command_exists docker-compose; then
-        docker-compose --version
+    echo "Python 3:"
+    if command_exists python3; then
+        python3 --version
     else
-        print_warning "Docker Compose standalone not found"
+        print_error "Python 3 not found"
     fi
     
-    echo "Python 3.11:"
-    if command_exists python3.11; then
-        python3.11 --version
+    echo "Pip:"
+    if command_exists pip3; then
+        pip3 --version
     else
-        print_error "Python 3.11 not found"
+        print_error "Pip not found"
     fi
     
     echo "PostgreSQL:"
@@ -289,10 +257,10 @@ create_database() {
 main() {
     echo "=========================================="
     echo "MalsiftCND Prerequisites Installation"
-    echo "Ubuntu 24.04 LTS"
+    echo "Ubuntu 24.04 LTS - Simple Version"
     echo "=========================================="
     echo
-    
+
     # Check prerequisites
     check_root
     check_sudo
@@ -300,7 +268,6 @@ main() {
     # Install components
     update_system
     install_docker
-    install_docker_compose_standalone
     install_python
     install_postgresql
     install_redis
@@ -332,6 +299,9 @@ main() {
     echo
     echo "To test Docker without sudo:"
     echo "  docker run hello-world"
+    echo
+    echo "Note: This installation uses the system Python 3.12 (default in Ubuntu 24.04)."
+    echo "No additional PPAs or complex Python setup required."
     echo
 }
 

@@ -51,8 +51,9 @@ echo "Installing Python 3.11..."
 sudo apt install -y software-properties-common
 sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-pip python3.11-distutils
-sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
+sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+sudo apt install -y build-essential libssl-dev libffi-dev python3-dev python3-pip
+sudo python3.11 -m ensurepip --upgrade
 
 echo "Installing PostgreSQL..."
 sudo apt install -y postgresql postgresql-contrib postgresql-client
