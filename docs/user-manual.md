@@ -500,6 +500,164 @@ All device exports now include EDR data:
 - **Conflict Resolution**: Handling of data conflicts between sources
 - **Unified View**: Combined view of network discovery and EDR data
 
+## AI-Based Accuracy Ranking
+
+### Intelligent Data Source Evaluation
+
+**AI-Powered Ranking System:**
+MalsiftCND features an advanced AI-based accuracy ranking system that continuously evaluates and ranks all data sources by their accuracy and effectiveness.
+
+**Key Features:**
+- **Continuous Evaluation**: AI continuously evaluates data source accuracy
+- **Automatic Ranking**: Sources are automatically ranked by composite accuracy scores
+- **Manual Override**: Admins can override AI rankings when needed
+- **Real-time Dashboard**: Live dashboard showing accuracy metrics and trends
+- **Alert System**: Alerts for significant accuracy changes
+- **Performance Tracking**: Response time and success rate monitoring
+
+### Data Source Types
+
+**Supported Source Types:**
+- **Network Scanners**: nmap, masscan, and other network discovery tools
+- **EDR Platforms**: CrowdStrike, Microsoft Defender, SentinelOne, TrendMicro
+- **ASM Tools**: RunZero, Tanium, Armis integration
+- **Directory Services**: Active Directory and Azure AD
+- **AI Analysis**: LLM-powered device identification
+- **User Corrections**: Manual user corrections and verifications
+
+**Evaluation Criteria:**
+- **Accuracy Score**: How close predictions are to actual values
+- **Confidence Level**: AI confidence in the accuracy assessment
+- **Data Completeness**: Completeness of provided information
+- **Response Time**: Speed of data retrieval and processing
+- **Success Rate**: Percentage of successful evaluations
+
+### Accuracy Evaluation Process
+
+**AI Comparison Method:**
+1. **Data Collection**: Gather predictions from each data source
+2. **Ground Truth**: Use EDR data and user corrections as ground truth
+3. **AI Analysis**: LLM compares predicted vs actual values
+4. **Scoring**: Calculate accuracy and confidence scores
+5. **Ranking**: Rank sources by composite score
+
+**Evaluation Types:**
+- **Device Identification**: Accuracy of device type detection
+- **OS Detection**: Accuracy of operating system identification
+- **Service Detection**: Accuracy of service and port detection
+- **Network Mapping**: Accuracy of network topology discovery
+
+**Composite Scoring:**
+- **Accuracy Weight**: 40% - Most important factor
+- **Confidence Weight**: 20% - AI confidence in accuracy
+- **Completeness Weight**: 20% - Data completeness score
+- **Performance Weight**: 10% - Response time (inverted)
+- **Success Rate Weight**: 10% - Overall success rate
+
+### Accuracy Dashboard
+
+**Dashboard Features:**
+- **Real-time Rankings**: Live ranking of all data sources
+- **Trend Analysis**: Accuracy trends over time
+- **Performance Metrics**: Response time and success rate analysis
+- **Source Distribution**: Distribution by source type
+- **Active Alerts**: Recent accuracy change alerts
+
+**Key Metrics:**
+- **Total Sources**: Number of active data sources
+- **Average Accuracy**: Overall system accuracy
+- **Average Confidence**: AI confidence level
+- **Recent Evaluations**: Number of recent evaluations
+- **Active Alerts**: Number of active accuracy alerts
+
+**Visualizations:**
+- **Ranking Table**: Sortable table with accuracy scores
+- **Trend Charts**: Line charts showing accuracy over time
+- **Performance Charts**: Bar charts showing response times
+- **Distribution Charts**: Pie charts showing source types
+- **Accuracy Bars**: Visual accuracy score indicators
+
+### Ranking Management
+
+**Automatic Ranking:**
+- **Weekly Updates**: Rankings recalculated weekly
+- **Algorithm Versioning**: Track ranking algorithm versions
+- **Historical Data**: Maintain ranking history
+- **Change Tracking**: Track rank changes over time
+
+**Manual Override:**
+- **Admin Override**: Admins can manually set rankings
+- **Override Tracking**: Track manual overrides
+- **Justification**: Require justification for overrides
+- **Audit Trail**: Maintain audit trail of changes
+
+**Ranking Alerts:**
+- **Significant Changes**: Alerts for rank changes ≥3 positions
+- **Severity Levels**: Low, medium, high, critical alerts
+- **Alert Management**: Acknowledge and resolve alerts
+- **Notification System**: Email and dashboard notifications
+
+### Performance Monitoring
+
+**Response Time Tracking:**
+- **Average Response Time**: Mean response time per source
+- **Performance Trends**: Response time trends over time
+- **Bottleneck Identification**: Identify slow sources
+- **Optimization Recommendations**: Suggest performance improvements
+
+**Success Rate Monitoring:**
+- **Overall Success Rate**: Percentage of successful operations
+- **Failure Analysis**: Analyze failure patterns
+- **Recovery Tracking**: Track recovery from failures
+- **Reliability Metrics**: Long-term reliability assessment
+
+**Data Completeness:**
+- **Completeness Scoring**: Score based on data field completeness
+- **Missing Data Analysis**: Identify missing data patterns
+- **Enrichment Opportunities**: Suggest data enrichment
+- **Quality Metrics**: Overall data quality assessment
+
+### Alert System
+
+**Alert Types:**
+- **Accuracy Drop**: Significant accuracy decrease
+- **Rank Change**: Major ranking position change
+- **Performance Issue**: Response time degradation
+- **Data Quality**: Data completeness issues
+- **System Error**: Technical errors in evaluation
+
+**Alert Management:**
+- **Severity Classification**: Low, medium, high, critical
+- **Alert Acknowledgment**: Acknowledge and track alerts
+- **Resolution Tracking**: Track alert resolution
+- **Escalation Rules**: Automatic escalation for critical alerts
+
+**Notification Channels:**
+- **Dashboard Notifications**: Real-time dashboard alerts
+- **Email Notifications**: Email alerts for critical issues
+- **API Notifications**: Programmatic alert access
+- **Webhook Integration**: External system integration
+
+### Accuracy Metrics
+
+**Historical Metrics:**
+- **Daily Metrics**: Daily accuracy and performance metrics
+- **Weekly Trends**: Weekly trend analysis
+- **Monthly Reports**: Monthly accuracy reports
+- **Yearly Analysis**: Annual accuracy analysis
+
+**Comparative Analysis:**
+- **Source Comparison**: Compare accuracy across sources
+- **Type Analysis**: Analyze accuracy by source type
+- **Time Period Comparison**: Compare accuracy across time periods
+- **Benchmark Tracking**: Track against accuracy benchmarks
+
+**Export and Reporting:**
+- **CSV Export**: Export accuracy metrics to CSV
+- **PDF Reports**: Generate PDF accuracy reports
+- **API Access**: Programmatic access to metrics
+- **Dashboard Embedding**: Embed metrics in external dashboards
+
 ## Scan Scheduling
 
 ### Automated Discovery Scans

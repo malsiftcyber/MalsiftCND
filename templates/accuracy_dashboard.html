@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accuracy Ranking Dashboard - MalsiftCND</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .dashboard-section {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 25px;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-change {
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        .metric-change.positive {
+            color: #28a745;
+        }
+        .metric-change.negative {
+            color: #dc3545;
+        }
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .ranking-table th, .ranking-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .ranking-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .ranking-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .rank-badge {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+        .rank-badge.top-3 {
+            background: #ffc107;
+            color: #212529;
+        }
+        .rank-badge.top-1 {
+            background: #28a745;
+        }
+        .accuracy-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .accuracy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+            transition: width 0.3s ease;
+        }
+        .accuracy-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .alert-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .alert-severity {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        .alert-severity.low {
+            background: #d4edda;
+            color: #155724;
+        }
+        .alert-severity.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .alert-severity.high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .alert-severity.critical {
+            background: #f5c6cb;
+            color: #721c24;
+        }
+        .source-type-badge {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .network-scanner { background: #d1ecf1; color: #0c5460; }
+        .edr-platform { background: #d4edda; color: #155724; }
+        .asm-tool { background: #f8d7da; color: #721c24; }
+        .directory-service { background: #fff3cd; color: #856404; }
+        .ai-analysis { background: #e2e3e5; color: #383d41; }
+        .user-correction { background: #fce4ec; color: #880e4f; }
+        .refresh-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Accuracy Ranking Dashboard</h1>
+            <p>AI-powered evaluation and ranking of data source accuracy</p>
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading dashboard data...</p>
+        </div>
+
+        <!-- Refresh Controls -->
+        <div class="refresh-controls">
+            <div>
+                <button type="button" class="btn" onclick="refreshDashboard()">🔄 Refresh Dashboard</button>
+                <button type="button" class="btn btn-success" onclick="calculateRankings()">📊 Calculate Rankings</button>
+                <button type="button" class="btn btn-warning" onclick="evaluateAllSources()">🔍 Evaluate All Sources</button>
+            </div>
+            <div class="auto-refresh">
+                <label>Auto-refresh:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh()">
+                    <span class="slider"></span>
+                </label>
+                <span id="refresh-status">Off</span>
+            </div>
+        </div>
+
+        <!-- Summary Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="total-sources">-</div>
+                <div class="metric-label">Total Sources</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avg-accuracy">-</div>
+                <div class="metric-label">Average Accuracy</div>
+                <div class="metric-change" id="accuracy-change"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avg-confidence">-</div>
+                <div class="metric-label">Average Confidence</div>
+                <div class="metric-change" id="confidence-change"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="recent-evaluations">-</div>
+                <div class="metric-label">Recent Evaluations</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="active-alerts">-</div>
+                <div class="metric-label">Active Alerts</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Accuracy Rankings -->
+            <div class="dashboard-section">
+                <h3>🏆 Data Source Rankings</h3>
+                <p>AI-evaluated accuracy rankings of all data sources</p>
+                
+                <table class="ranking-table" id="rankings-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Source</th>
+                            <th>Type</th>
+                            <th>Accuracy</th>
+                            <th>Confidence</th>
+                            <th>Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rankings will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Accuracy Trends -->
+            <div class="dashboard-section">
+                <h3>📈 Accuracy Trends</h3>
+                <p>Accuracy trends over the last 30 days</p>
+                
+                <div class="chart-container">
+                    <canvas id="accuracy-trends-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="dashboard-section">
+                <h3>⚡ Performance Metrics</h3>
+                <p>Response time and success rate analysis</p>
+                
+                <div class="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Source Type Distribution -->
+            <div class="dashboard-section">
+                <h3>📊 Source Type Distribution</h3>
+                <p>Distribution of data sources by type</p>
+                
+                <div class="chart-container">
+                    <canvas id="source-type-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Alerts -->
+        <div class="dashboard-section full-width">
+            <h3>🚨 Active Accuracy Alerts</h3>
+            <p>Recent alerts for significant accuracy changes</p>
+            
+            <div id="alerts-container">
+                <!-- Alerts will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Detailed Rankings -->
+        <div class="dashboard-section full-width">
+            <h3>📋 Detailed Rankings</h3>
+            <p>Comprehensive ranking data with all metrics</p>
+            
+            <table class="ranking-table" id="detailed-rankings-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Source Name</th>
+                        <th>Type</th>
+                        <th>Provider</th>
+                        <th>Accuracy</th>
+                        <th>Confidence</th>
+                        <th>Success Rate</th>
+                        <th>Response Time</th>
+                        <th>Completeness</th>
+                        <th>Evaluations</th>
+                        <th>Last Evaluation</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Detailed rankings will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const apiBaseUrl = '/api/v1';
+        let autoRefreshInterval = null;
+        let accuracyTrendsChart = null;
+        let performanceChart = null;
+        let sourceTypeChart = null;
+
+        // Load dashboard on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+        });
+
+        // Dashboard Functions
+        async function loadDashboard() {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${apiBaseUrl}/accuracy/dashboard`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load dashboard data');
+                }
+                
+                const data = await response.json();
+                updateDashboard(data);
+                
+            } catch (error) {
+                showError('Failed to load dashboard: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update summary metrics
+            document.getElementById('total-sources').textContent = data.summary.total_sources;
+            document.getElementById('avg-accuracy').textContent = (data.summary.average_accuracy * 100).toFixed(1) + '%';
+            document.getElementById('avg-confidence').textContent = (data.summary.average_confidence * 100).toFixed(1) + '%';
+            document.getElementById('recent-evaluations').textContent = data.summary.recent_evaluations;
+            document.getElementById('active-alerts').textContent = data.summary.active_alerts;
+
+            // Update rankings table
+            updateRankingsTable(data.rankings);
+            
+            // Update detailed rankings table
+            updateDetailedRankingsTable(data.rankings);
+            
+            // Update charts
+            updateAccuracyTrendsChart(data.accuracy_trends);
+            updatePerformanceChart(data.performance_metrics);
+            updateSourceTypeChart(data.rankings);
+            
+            // Update alerts
+            loadAlerts();
+        }
+
+        function updateRankingsTable(rankings) {
+            const tbody = document.querySelector('#rankings-table tbody');
+            tbody.innerHTML = '';
+            
+            rankings.slice(0, 10).forEach(ranking => {
+                const row = document.createElement('tr');
+                
+                const rankClass = ranking.rank <= 3 ? 'top-3' : '';
+                const rankBadge = `<span class="rank-badge ${rankClass}">${ranking.rank}</span>`;
+                
+                const changeText = ranking.rank_change > 0 ? 
+                    `+${ranking.rank_change}` : 
+                    (ranking.rank_change < 0 ? `${ranking.rank_change}` : '');
+                const changeClass = ranking.rank_change > 0 ? 'positive' : 
+                    (ranking.rank_change < 0 ? 'negative' : '');
+                
+                row.innerHTML = `
+                    <td>${rankBadge}</td>
+                    <td>${ranking.name}</td>
+                    <td><span class="source-type-badge ${ranking.source_type.replace('_', '-')}">${ranking.source_type.replace('_', ' ').toUpperCase()}</span></td>
+                    <td>
+                        <div class="accuracy-bar">
+                            <div class="accuracy-fill" style="width: ${ranking.accuracy_score * 100}%"></div>
+                            <div class="accuracy-text">${(ranking.accuracy_score * 100).toFixed(1)}%</div>
+                        </div>
+                    </td>
+                    <td>${(ranking.confidence_level * 100).toFixed(1)}%</td>
+                    <td><span class="metric-change ${changeClass}">${changeText}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateDetailedRankingsTable(rankings) {
+            const tbody = document.querySelector('#detailed-rankings-table tbody');
+            tbody.innerHTML = '';
+            
+            rankings.forEach(ranking => {
+                const row = document.createElement('tr');
+                
+                const rankClass = ranking.rank <= 3 ? 'top-3' : '';
+                const rankBadge = `<span class="rank-badge ${rankClass}">${ranking.rank}</span>`;
+                
+                const changeText = ranking.rank_change > 0 ? 
+                    `+${ranking.rank_change}` : 
+                    (ranking.rank_change < 0 ? `${ranking.rank_change}` : '');
+                const changeClass = ranking.rank_change > 0 ? 'positive' : 
+                    (ranking.rank_change < 0 ? 'negative' : '');
+                
+                row.innerHTML = `
+                    <td>${rankBadge}</td>
+                    <td>${ranking.name}</td>
+                    <td><span class="source-type-badge ${ranking.source_type.replace('_', '-')}">${ranking.source_type.replace('_', ' ').toUpperCase()}</span></td>
+                    <td>${ranking.provider || 'N/A'}</td>
+                    <td>${(ranking.accuracy_score * 100).toFixed(1)}%</td>
+                    <td>${(ranking.confidence_level * 100).toFixed(1)}%</td>
+                    <td>${(ranking.success_rate * 100).toFixed(1)}%</td>
+                    <td>${ranking.average_response_time_ms.toFixed(0)}ms</td>
+                    <td>${(ranking.data_completeness * 100).toFixed(1)}%</td>
+                    <td>${ranking.total_evaluations}</td>
+                    <td>${ranking.last_evaluation ? new Date(ranking.last_evaluation).toLocaleDateString() : 'Never'}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="evaluateSource('${ranking.id}')">Evaluate</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateAccuracyTrendsChart(trends) {
+            const ctx = document.getElementById('accuracy-trends-chart').getContext('2d');
+            
+            if (accuracyTrendsChart) {
+                accuracyTrendsChart.destroy();
+            }
+            
+            const labels = trends.trends.map(t => t.date);
+            const data = trends.trends.map(t => t.average_accuracy * 100);
+            
+            accuracyTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Accuracy (%)',
+                        data: data,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePerformanceChart(metrics) {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Response Time (ms)', 'Success Rate (%)', 'Data Completeness (%)'],
+                    datasets: [{
+                        label: 'Performance Metrics',
+                        data: [
+                            metrics.response_time?.average_ms || 0,
+                            (metrics.success_rate?.average || 0) * 100,
+                            (metrics.data_completeness?.average || 0) * 100
+                        ],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSourceTypeChart(rankings) {
+            const ctx = document.getElementById('source-type-chart').getContext('2d');
+            
+            if (sourceTypeChart) {
+                sourceTypeChart.destroy();
+            }
+            
+            // Count sources by type
+            const typeCounts = {};
+            rankings.forEach(ranking => {
+                typeCounts[ranking.source_type] = (typeCounts[ranking.source_type] || 0) + 1;
+            });
+            
+            const labels = Object.keys(typeCounts);
+            const data = Object.values(typeCounts);
+            const colors = [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 205, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)'
+            ];
+            
+            sourceTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadAlerts() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/accuracy/alerts?active_only=true&limit=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load alerts');
+                }
+                
+                const alerts = await response.json();
+                updateAlerts(alerts);
+                
+            } catch (error) {
+                console.error('Failed to load alerts:', error);
+            }
+        }
+
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<p>No active alerts</p>';
+                return;
+            }
+            
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert-item';
+                
+                const severityClass = alert.severity.toLowerCase();
+                const changeText = alert.change_percentage ? 
+                    `${alert.change_percentage.toFixed(1)}%` : '';
+                
+                alertDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="alert-severity ${severityClass}">${alert.severity.toUpperCase()}</span>
+                            <strong>${alert.title}</strong>
+                            <span style="color: #666; margin-left: 10px;">${alert.data_source_name}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.9em; color: #666;">
+                                ${new Date(alert.triggered_at).toLocaleString()}
+                            </div>
+                            ${changeText ? `<div style="font-size: 0.9em; color: #666;">Change: ${changeText}</div>` : ''}
+                        </div>
+                    </div>
+                    ${alert.description ? `<div style="margin-top: 10px; color: #666;">${alert.description}</div>` : ''}
+                `;
+                
+                container.appendChild(alertDiv);
+            });
+        }
+
+        // Action Functions
+        async function refreshDashboard() {
+            await loadDashboard();
+            showSuccess('Dashboard refreshed successfully');
+        }
+
+        async function calculateRankings() {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${apiBaseUrl}/accuracy/rankings/calculate`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to calculate rankings');
+                }
+                
+                const result = await response.json();
+                showSuccess(`Rankings calculated successfully! Processed ${result.total_sources} sources.`);
+                await loadDashboard();
+                
+            } catch (error) {
+                showError('Failed to calculate rankings: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function evaluateAllSources() {
+            try {
+                showLoading(true);
+                
+                // Get all data sources
+                const sourcesResponse = await fetch(`${apiBaseUrl}/accuracy/data-sources`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!sourcesResponse.ok) {
+                    throw new Error('Failed to get data sources');
+                }
+                
+                const sources = await sourcesResponse.json();
+                
+                // Evaluate each source
+                let evaluated = 0;
+                for (const source of sources) {
+                    try {
+                        const response = await fetch(`${apiBaseUrl}/accuracy/data-sources/${source.id}/evaluate`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                            },
+                            body: JSON.stringify({
+                                evaluation_type: 'device_identification',
+                                sample_size: 50
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            evaluated++;
+                        }
+                    } catch (e) {
+                        console.error(`Failed to evaluate source ${source.name}:`, e);
+                    }
+                }
+                
+                showSuccess(`Evaluated ${evaluated} out of ${sources.length} data sources.`);
+                await loadDashboard();
+                
+            } catch (error) {
+                showError('Failed to evaluate sources: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function evaluateSource(sourceId) {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${apiBaseUrl}/accuracy/data-sources/${sourceId}/evaluate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: JSON.stringify({
+                        evaluation_type: 'device_identification',
+                        sample_size: 100
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to evaluate source');
+                }
+                
+                const result = await response.json();
+                showSuccess(`Source evaluated successfully! Accuracy: ${(result.average_accuracy * 100).toFixed(1)}%`);
+                await loadDashboard();
+                
+            } catch (error) {
+                showError('Failed to evaluate source: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Auto-refresh Functions
+        function toggleAutoRefresh() {
+            const toggle = document.getElementById('auto-refresh-toggle');
+            const status = document.getElementById('refresh-status');
+            
+            if (toggle.checked) {
+                autoRefreshInterval = setInterval(refreshDashboard, 30000); // 30 seconds
+                status.textContent = 'On (30s)';
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                status.textContent = 'Off';
+            }
+        }
+
+        // Utility Functions
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -946,6 +946,364 @@ Get available EDR providers and their configuration requirements.
 }
 ```
 
+### Accuracy Ranking
+
+#### GET /accuracy/data-sources
+List all data sources with their accuracy metrics.
+
+**Query Parameters:**
+- `active_only`: Show only active sources (default: true)
+- `ranked_only`: Show only ranked sources (default: false)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "CrowdStrike Falcon",
+    "source_type": "edr_platform",
+    "provider": "crowdstrike",
+    "version": "6.45.0",
+    "description": "Endpoint detection and response platform",
+    "is_active": true,
+    "is_ai_evaluated": true,
+    "manual_rank_override": null,
+    "current_accuracy_score": 0.95,
+    "confidence_level": 0.92,
+    "current_rank": 1,
+    "previous_rank": 2,
+    "rank_change": 1,
+    "total_evaluations": 1250,
+    "successful_evaluations": 1187,
+    "failed_evaluations": 63,
+    "average_response_time_ms": 450.0,
+    "success_rate": 0.95,
+    "data_completeness_score": 0.88,
+    "last_evaluation": "2024-01-15T10:30:00Z",
+    "created_at": "2024-01-15T00:00:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### POST /accuracy/data-sources
+Create a new data source.
+
+**Request Body:**
+```json
+{
+  "name": "Custom Scanner",
+  "source_type": "network_scanner",
+  "provider": "custom",
+  "version": "1.0.0",
+  "description": "Custom network scanner",
+  "is_active": true,
+  "is_ai_evaluated": true,
+  "manual_rank_override": null
+}
+```
+
+#### GET /accuracy/data-sources/{source_id}
+Get data source by ID.
+
+#### PUT /accuracy/data-sources/{source_id}
+Update data source.
+
+#### POST /accuracy/data-sources/{source_id}/evaluate
+Evaluate data source accuracy.
+
+**Request Body:**
+```json
+{
+  "evaluation_type": "device_identification",
+  "sample_size": 100
+}
+```
+
+**Response:**
+```json
+{
+  "data_source_id": "uuid",
+  "evaluation_type": "device_identification",
+  "total_evaluations": 100,
+  "average_accuracy": 0.87,
+  "average_confidence": 0.82,
+  "average_response_time_ms": 1200.0,
+  "data_completeness": 0.75,
+  "success_rate": 0.95
+}
+```
+
+#### POST /accuracy/rankings/calculate
+Calculate and update data source rankings.
+
+**Response:**
+```json
+{
+  "ranking_calculated": true,
+  "total_sources": 8,
+  "ranking_period": "2024-01-08T00:00:00Z to 2024-01-15T00:00:00Z",
+  "algorithm_version": "1.0",
+  "rankings": [
+    {
+      "rank": 1,
+      "source_name": "CrowdStrike Falcon",
+      "source_type": "edr_platform",
+      "composite_score": 0.92,
+      "accuracy_score": 0.95,
+      "confidence_level": 0.92,
+      "rank_change": 1
+    }
+  ]
+}
+```
+
+#### GET /accuracy/rankings
+Get historical rankings.
+
+**Query Parameters:**
+- `limit`: Number of rankings to return (default: 50)
+- `offset`: Number of rankings to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "data_source_id": "uuid",
+    "data_source_name": "CrowdStrike Falcon",
+    "rank": 1,
+    "accuracy_score": 0.95,
+    "confidence_level": 0.92,
+    "total_evaluations": 1250,
+    "successful_evaluations": 1187,
+    "failed_evaluations": 63,
+    "average_response_time_ms": 450.0,
+    "success_rate": 0.95,
+    "data_completeness_score": 0.88,
+    "ranking_period_start": "2024-01-08T00:00:00Z",
+    "ranking_period_end": "2024-01-15T00:00:00Z",
+    "ranking_algorithm_version": "1.0",
+    "created_at": "2024-01-15T00:00:00Z"
+  }
+]
+```
+
+#### GET /accuracy/dashboard
+Get accuracy ranking dashboard data.
+
+**Query Parameters:**
+- `dashboard_id`: Specific dashboard ID (optional)
+
+**Response:**
+```json
+{
+  "summary": {
+    "total_sources": 8,
+    "average_accuracy": 0.87,
+    "average_confidence": 0.82,
+    "recent_evaluations": 150,
+    "active_alerts": 3,
+    "last_ranking_update": "2024-01-15T10:30:00Z"
+  },
+  "rankings": [
+    {
+      "rank": 1,
+      "name": "CrowdStrike Falcon",
+      "source_type": "edr_platform",
+      "provider": "crowdstrike",
+      "accuracy_score": 0.95,
+      "confidence_level": 0.92,
+      "success_rate": 0.95,
+      "data_completeness": 0.88,
+      "average_response_time_ms": 450.0,
+      "total_evaluations": 1250,
+      "rank_change": 1,
+      "last_evaluation": "2024-01-15T10:30:00Z",
+      "is_ai_evaluated": true,
+      "manual_rank_override": null
+    }
+  ],
+  "accuracy_trends": {
+    "period": "30_days",
+    "trends": [
+      {
+        "date": "2024-01-15",
+        "average_accuracy": 0.87,
+        "source_count": 8
+      }
+    ]
+  },
+  "performance_metrics": {
+    "response_time": {
+      "average_ms": 850.0,
+      "min_ms": 200.0,
+      "max_ms": 3000.0
+    },
+    "success_rate": {
+      "average": 0.92,
+      "min": 0.75,
+      "max": 0.98
+    },
+    "data_completeness": {
+      "average": 0.82,
+      "min": 0.60,
+      "max": 0.95
+    }
+  }
+}
+```
+
+#### POST /accuracy/dashboard
+Create a new accuracy dashboard.
+
+**Request Body:**
+```json
+{
+  "name": "Executive Dashboard",
+  "description": "High-level accuracy metrics for executives",
+  "refresh_interval_minutes": 30,
+  "source_type_filter": ["edr_platform", "network_scanner"],
+  "time_range_days": 30,
+  "min_accuracy_threshold": 0.8
+}
+```
+
+#### GET /accuracy/alerts
+Get accuracy alerts.
+
+**Query Parameters:**
+- `active_only`: Show only active alerts (default: true)
+- `severity`: Filter by severity level (optional)
+- `limit`: Number of alerts to return (default: 50)
+- `offset`: Number of alerts to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "data_source_id": "uuid",
+    "data_source_name": "Nmap Scanner",
+    "alert_type": "accuracy_drop",
+    "severity": "high",
+    "title": "Significant Accuracy Drop: Nmap Scanner",
+    "description": "Accuracy dropped from 85% to 72%",
+    "alert_data": {
+      "previous_accuracy": 0.85,
+      "current_accuracy": 0.72,
+      "drop_percentage": 15.3
+    },
+    "threshold_value": 10.0,
+    "actual_value": 15.3,
+    "change_percentage": 15.3,
+    "is_active": true,
+    "is_acknowledged": false,
+    "acknowledged_by": null,
+    "acknowledged_at": null,
+    "triggered_at": "2024-01-15T10:30:00Z",
+    "resolved_at": null,
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### POST /accuracy/alerts/{alert_id}/acknowledge
+Acknowledge an accuracy alert.
+
+**Response:**
+```json
+{
+  "message": "Alert 'uuid' acknowledged successfully"
+}
+```
+
+#### GET /accuracy/metrics
+Get accuracy metrics over time.
+
+**Query Parameters:**
+- `period`: Metric period (hourly, daily, weekly, monthly)
+- `days`: Number of days to include (1-365)
+
+**Response:**
+```json
+{
+  "period": "daily",
+  "days": 30,
+  "start_date": "2023-12-16T00:00:00Z",
+  "end_date": "2024-01-15T00:00:00Z",
+  "metrics_by_source": {
+    "uuid": {
+      "source_name": "CrowdStrike Falcon",
+      "source_type": "edr_platform",
+      "metrics": [
+        {
+          "date": "2024-01-15",
+          "accuracy_score": 0.95,
+          "confidence_level": 0.92,
+          "total_evaluations": 50,
+          "success_rate": 0.96,
+          "data_completeness": 0.88,
+          "rank": 1,
+          "rank_change": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+#### POST /accuracy/initialize
+Initialize the accuracy ranking system with default data sources.
+
+**Response:**
+```json
+{
+  "message": "Accuracy ranking system initialized successfully"
+}
+```
+
+#### GET /accuracy/source-types
+Get available data source types.
+
+**Response:**
+```json
+{
+  "source_types": [
+    {
+      "value": "network_scanner",
+      "name": "Network Scanner",
+      "description": "Network discovery and port scanning tools"
+    },
+    {
+      "value": "edr_platform",
+      "name": "EDR Platform",
+      "description": "Endpoint detection and response platforms"
+    },
+    {
+      "value": "asm_tool",
+      "name": "ASM Tool",
+      "description": "Attack surface management tools"
+    },
+    {
+      "value": "directory_service",
+      "name": "Directory Service",
+      "description": "Active Directory and Azure AD services"
+    },
+    {
+      "value": "ai_analysis",
+      "name": "AI Analysis",
+      "description": "AI-powered analysis and identification"
+    },
+    {
+      "value": "user_correction",
+      "name": "User Correction",
+      "description": "Manual user corrections and verifications"
+    }
+  ]
+}
+```
+
 ### Scheduling
 
 #### GET /scheduling/schedules
