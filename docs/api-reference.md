@@ -533,6 +533,14 @@ Export comprehensive discovery report to CSV format (POST method).
 
 **Response:** CSV file download
 
+#### GET /exports/new-devices/csv
+Export newly discovered devices from the last N hours.
+
+**Query Parameters:**
+- `hours`: Number of hours to look back (1-168, default: 24)
+
+**Response:** CSV file download
+
 #### GET /exports/formats
 Get available export formats and options.
 
@@ -548,7 +556,8 @@ Get available export formats and options.
         "devices",
         "scan_results",
         "corrections",
-        "discovery_reports"
+        "discovery_reports",
+        "new_devices"
       ]
     }
   ],
@@ -561,9 +570,107 @@ Get available export formats and options.
     "date_range": "Filter by discovery date range",
     "device_types": "Filter by specific device types",
     "risk_score_range": "Filter by risk score range"
+  },
+  "new_devices_options": {
+    "hours": "Number of hours to look back for new devices (1-168)"
   }
 }
 ```
+
+### Scheduling
+
+#### GET /scheduling/schedules
+List all scan schedules.
+
+**Response:**
+```json
+[
+  {
+    "schedule_id": "uuid",
+    "name": "Default Discovery Scan",
+    "schedule_type": "discovery",
+    "frequency": "custom",
+    "target_networks": ["192.168.0.0/16"],
+    "enabled": true,
+    "custom_interval_hours": 6,
+    "start_time": "00:00",
+    "days_of_week": null,
+    "scanner_config": {
+      "scanner": "nmap",
+      "scan_type": "discovery",
+      "ports": "1-1000",
+      "timing": "T4"
+    },
+    "last_run": "2024-01-15T06:00:00Z",
+    "next_run": "2024-01-15T12:00:00Z",
+    "total_runs": 150,
+    "successful_runs": 145,
+    "failed_runs": 5
+  }
+]
+```
+
+#### POST /scheduling/schedules
+Create a new scan schedule.
+
+**Request Body:**
+```json
+{
+  "name": "Custom Discovery Scan",
+  "schedule_type": "discovery",
+  "frequency": "daily",
+  "target_networks": ["10.0.0.0/8"],
+  "enabled": true,
+  "start_time": "02:00",
+  "scanner_config": {
+    "scanner": "nmap",
+    "scan_type": "discovery",
+    "ports": "1-1000",
+    "timing": "T3"
+  }
+}
+```
+
+#### PUT /scheduling/schedules/{schedule_id}
+Update an existing schedule.
+
+#### DELETE /scheduling/schedules/{schedule_id}
+Delete a schedule.
+
+#### POST /scheduling/schedules/{schedule_id}/enable
+Enable a schedule.
+
+#### POST /scheduling/schedules/{schedule_id}/disable
+Disable a schedule.
+
+#### POST /scheduling/schedules/{schedule_id}/run-now
+Run a schedule immediately.
+
+#### GET /scheduling/schedules/stats
+Get scheduling statistics.
+
+**Response:**
+```json
+{
+  "total_schedules": 5,
+  "enabled_schedules": 3,
+  "disabled_schedules": 2,
+  "total_runs": 500,
+  "successful_runs": 485,
+  "failed_runs": 15,
+  "success_rate": 0.97,
+  "scheduler_running": true
+}
+```
+
+#### POST /scheduling/scheduler/start
+Start the scan scheduler.
+
+#### POST /scheduling/scheduler/stop
+Stop the scan scheduler.
+
+#### GET /scheduling/scheduler/status
+Get scheduler status.
 
 ### Integrations
 

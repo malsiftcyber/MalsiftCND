@@ -304,6 +304,57 @@ Risk Score: 5-10
 - Share filters with team members
 - Export filtered results
 
+## Scan Scheduling
+
+### Automated Discovery Scans
+
+**Scheduled Scanning:**
+MalsiftCND supports automated discovery scans that run on configurable schedules to continuously monitor your network for new devices and changes.
+
+**Schedule Types:**
+- **Discovery Scans**: Comprehensive network discovery scans
+- **Monitoring Scans**: Lightweight monitoring of known devices
+- **Compliance Scans**: Regular compliance and security assessments
+
+**Schedule Frequencies:**
+- **Hourly**: Run every hour
+- **Daily**: Run once per day at specified time
+- **Weekly**: Run on specified days of the week
+- **Custom**: Run at custom intervals (e.g., every 6 hours)
+
+**Default Schedules:**
+- **Default Discovery Scan**: Runs every 6 hours, comprehensive network discovery
+- **Default Monitoring Scan**: Runs daily at 2:00 AM, lightweight monitoring
+
+### Managing Schedules
+
+**Viewing Schedules:**
+1. Navigate to Admin → Scheduling
+2. View all configured schedules
+3. See next run times and statistics
+
+**Creating New Schedules:**
+1. Click "Create New Schedule"
+2. Configure schedule details:
+   - Name and description
+   - Schedule type (Discovery/Monitoring/Compliance)
+   - Frequency and timing
+   - Target networks
+   - Scanner configuration
+3. Save and enable the schedule
+
+**Schedule Configuration:**
+- **Target Networks**: Specify IP ranges to scan
+- **Scanner Settings**: Configure nmap/masscan parameters
+- **Timing**: Set start times and intervals
+- **Enabled/Disabled**: Control schedule activation
+
+**Schedule Statistics:**
+- Total runs and success rate
+- Last run time and next scheduled run
+- Success/failure counts
+- Performance metrics
+
 ## Reports and Analytics
 
 ### Generating Reports
@@ -372,6 +423,8 @@ Risk Score: 5-10
 - All Devices: Complete device inventory
 - High Risk Devices: Devices with risk score > 7
 - Recent Discoveries: Devices discovered in last 30 days
+- New Devices (24h): Devices discovered in last 24 hours
+- New Devices (6h): Devices discovered in last 6 hours
 - Servers Only: Windows and Linux servers
 - Network Devices: Routers, switches, firewalls
 

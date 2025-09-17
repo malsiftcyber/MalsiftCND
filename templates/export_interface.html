@@ -260,6 +260,22 @@
             </form>
         </div>
 
+        <!-- New Devices Export Section -->
+        <div class="export-section">
+            <h3>🆕 New Devices Export</h3>
+            <p>Export devices discovered in the last 24 hours (or custom timeframe)</p>
+            
+            <form id="new-devices-export-form">
+                <div class="form-group">
+                    <label for="hours-back">Hours to look back:</label>
+                    <input type="number" id="hours-back" value="24" min="1" max="168" placeholder="24">
+                    <div class="help-text">Number of hours to look back for newly discovered devices (1-168 hours)</div>
+                </div>
+
+                <button type="submit" class="btn btn-success">🆕 Export New Devices CSV</button>
+            </form>
+        </div>
+
         <!-- Quick Export Buttons -->
         <div class="export-section">
             <h3>⚡ Quick Exports</h3>
@@ -268,6 +284,8 @@
             <button type="button" class="btn" onclick="quickExport('all-devices')">All Devices</button>
             <button type="button" class="btn" onclick="quickExport('high-risk')">High Risk Devices</button>
             <button type="button" class="btn" onclick="quickExport('recent-discoveries')">Recent Discoveries</button>
+            <button type="button" class="btn" onclick="quickExport('new-devices-24h')">New Devices (24h)</button>
+            <button type="button" class="btn" onclick="quickExport('new-devices-6h')">New Devices (6h)</button>
             <button type="button" class="btn" onclick="quickExport('servers')">Servers Only</button>
             <button type="button" class="btn" onclick="quickExport('network-devices')">Network Devices</button>
         </div>
@@ -346,6 +364,19 @@
             await exportData(`/exports/corrections/csv?${params.toString()}`, 'corrections_export.csv');
         });
 
+        // New Devices Export Form
+        document.getElementById('new-devices-export-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const hours = document.getElementById('hours-back').value;
+            if (!hours || hours < 1 || hours > 168) {
+                showError('Please enter a valid number of hours (1-168)');
+                return;
+            }
+            
+            await exportData(`/exports/new-devices/csv?hours=${hours}`, `new_devices_last_${hours}h.csv`);
+        });
+
         // Quick Export Functions
         async function quickExport(type) {
             let url = '';
@@ -365,6 +396,14 @@
                     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                     url = `/exports/discovery-report/csv?start_date=${thirtyDaysAgo.toISOString().split('T')[0]}`;
                     filename = 'recent_discoveries.csv';
+                    break;
+                case 'new-devices-24h':
+                    url = '/exports/new-devices/csv?hours=24';
+                    filename = 'new_devices_24h.csv';
+                    break;
+                case 'new-devices-6h':
+                    url = '/exports/new-devices/csv?hours=6';
+                    filename = 'new_devices_6h.csv';
                     break;
                 case 'servers':
                     url = '/exports/discovery-report/csv?device_types=Windows Server,Linux Server';

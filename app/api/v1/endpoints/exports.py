@@ -253,6 +253,35 @@ async def export_discovery_report_csv_get(
         )
 
 
+@router.get("/new-devices/csv")
+async def export_new_devices_csv(
+    hours: int = Query(default=24, description="Number of hours to look back for new devices", ge=1, le=168),
+    token: str = Depends(auth_service.verify_token)
+):
+    """Export newly discovered devices from the last N hours"""
+    try:
+        # Generate CSV content
+        csv_content = await export_service.export_new_devices_csv(hours)
+        
+        # Create streaming response
+        def generate():
+            yield csv_content
+        
+        return StreamingResponse(
+            generate(),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=new_devices_last_{hours}h_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            }
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export new devices CSV: {str(e)}"
+        )
+
+
 @router.get("/formats")
 async def get_export_formats(
     token: str = Depends(auth_service.verify_token)
@@ -268,7 +297,8 @@ async def get_export_formats(
                     "devices",
                     "scan_results", 
                     "corrections",
-                    "discovery_reports"
+                    "discovery_reports",
+                    "new_devices"
                 ]
             }
         ],
@@ -281,5 +311,8 @@ async def get_export_formats(
             "date_range": "Filter by discovery date range",
             "device_types": "Filter by specific device types",
             "risk_score_range": "Filter by risk score range"
+        },
+        "new_devices_options": {
+            "hours": "Number of hours to look back for new devices (1-168)"
         }
     }

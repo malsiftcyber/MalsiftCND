@@ -260,3 +260,18 @@ async def get_system_logs(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get system logs: {str(e)}"
         )
+
+
+@router.get("/scheduling")
+async def get_scheduling_config(
+    token: str = Depends(require_admin)
+):
+    """Get scan scheduling configuration"""
+    try:
+        config = await admin_service.get_scheduling_config()
+        return config
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get scheduling config: {str(e)}"
+        )

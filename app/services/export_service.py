@@ -233,6 +233,77 @@ class ExportService:
         finally:
             db.close()
     
+    async def export_new_devices_csv(self, hours: int = 24) -> str:
+        """Export newly discovered devices from the last N hours"""
+        db = SessionLocal()
+        try:
+            from datetime import timedelta
+            
+            # Calculate cutoff time
+            cutoff_time = datetime.now() - timedelta(hours=hours)
+            
+            # Query for devices discovered in the last N hours
+            devices = db.query(Device).filter(
+                Device.is_active == True,
+                Device.first_seen >= cutoff_time
+            ).all()
+            
+            # Create CSV content
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            headers = [
+                'IP Address', 'Hostname', 'Device Type', 'Operating System',
+                'Confidence', 'Risk Score', 'First Seen', 'Discovery Time (Hours Ago)',
+                'Tags', 'Open Ports', 'Services', 'Service Count', 'High Risk Services',
+                'AI Analysis', 'Notes', 'Discovery Method'
+            ]
+            
+            writer.writerow(headers)
+            
+            # Write device data
+            for device in devices:
+                services_data = self._extract_services_data(device)
+                
+                # Calculate hours since discovery
+                hours_ago = (datetime.now() - device.first_seen).total_seconds() / 3600
+                
+                # Identify high-risk services
+                high_risk_services = self._identify_high_risk_services(services_data['services'])
+                
+                # Determine discovery method
+                discovery_method = self._determine_discovery_method(device)
+                
+                row = [
+                    device.ip,
+                    device.hostname or '',
+                    device.device_type,
+                    device.operating_system,
+                    f"{device.confidence:.2%}",
+                    device.risk_score,
+                    device.first_seen.isoformat(),
+                    f"{hours_ago:.1f}",
+                    '; '.join(device.tags) if device.tags else '',
+                    services_data['ports'],
+                    services_data['services'],
+                    len(services_data['services'].split('; ')) if services_data['services'] else 0,
+                    '; '.join(high_risk_services),
+                    device.ai_analysis.get('reasoning', '') if device.ai_analysis else '',
+                    device.notes or '',
+                    discovery_method
+                ]
+                
+                writer.writerow(row)
+            
+            return output.getvalue()
+            
+        except Exception as e:
+            self.logger.error(f"Failed to export new devices CSV: {e}")
+            raise
+        finally:
+            db.close()
+
     async def export_discovery_report_csv(self, start_date: Optional[datetime] = None,
                                         end_date: Optional[datetime] = None,
                                         device_types: Optional[List[str]] = None,
@@ -381,3 +452,18 @@ class ExportService:
         
         services = [s.strip().lower() for s in services_str.split(';') if s.strip()]
         return [s for s in services if s in high_risk_services]
+    
+    def _determine_discovery_method(self, device: Device) -> str:
+        """Determine how the device was discovered"""
+        if not device.scan_results:
+            return "Unknown"
+        
+        # Check which scanners found this device
+        scanners = list(device.scan_results.keys())
+        
+        if len(scanners) == 1:
+            return scanners[0].title()
+        elif len(scanners) > 1:
+            return f"Multiple ({', '.join(scanners).title()})"
+        else:
+            return "Unknown"

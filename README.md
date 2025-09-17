@@ -13,11 +13,13 @@ MalsiftCND is an advanced network discovery and attack surface management platfo
 - **Device Correction System**: Correct mis-identifications and improve AI accuracy over time
 - **Pattern Learning**: Automatic extraction and application of identification patterns
 - **CSV Export System**: Export discovery reports and device data in CSV format
+- **Automated Scheduling**: Configurable discovery scan scheduling with multiple frequency options
+- **New Device Detection**: Export newly discovered devices from the last 24 hours (or custom timeframe)
 - **Enterprise Integrations**: Connects with RunZero, Tanium, Armis, and Active Directory/Azure AD
 - **Secure Authentication**: Supports local users, AD, and Azure AD with optional MFA
 - **SSL/TLS Support**: LetEncrypt and enterprise certificate support
 - **REST API**: Full API for automation tool integration
-- **Admin Interface**: Comprehensive configuration and throttling controls
+- **Admin Interface**: Comprehensive configuration, throttling, and scheduling controls
 
 ## Quick Start
 

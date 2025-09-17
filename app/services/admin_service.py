@@ -242,3 +242,37 @@ class AdminService:
             logs = [log for log in logs if log["level"].lower() == level.lower()]
         
         return logs[offset:offset + limit]
+    
+    async def get_scheduling_config(self) -> Dict[str, Any]:
+        """Get scan scheduling configuration"""
+        from app.services.scheduling_service import SchedulingService
+        scheduling_service = SchedulingService()
+        
+        stats = scheduling_service.get_schedule_stats()
+        schedules = scheduling_service.list_schedules()
+        
+        return {
+            "scheduler_enabled": stats["scheduler_running"],
+            "total_schedules": stats["total_schedules"],
+            "enabled_schedules": stats["enabled_schedules"],
+            "disabled_schedules": stats["disabled_schedules"],
+            "total_runs": stats["total_runs"],
+            "successful_runs": stats["successful_runs"],
+            "failed_runs": stats["failed_runs"],
+            "success_rate": stats["success_rate"],
+            "schedules": [
+                {
+                    "schedule_id": s.schedule_id,
+                    "name": s.name,
+                    "schedule_type": s.schedule_type.value,
+                    "frequency": s.frequency.value,
+                    "enabled": s.enabled,
+                    "next_run": s.next_run.isoformat() if s.next_run else None,
+                    "last_run": s.last_run.isoformat() if s.last_run else None,
+                    "total_runs": s.total_runs,
+                    "successful_runs": s.successful_runs,
+                    "failed_runs": s.failed_runs
+                }
+                for s in schedules
+            ]
+        }
