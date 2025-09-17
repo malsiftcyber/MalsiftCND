@@ -1304,6 +1304,415 @@ Get available data source types.
 }
 ```
 
+### Discovery Agents
+
+#### POST /agents/register
+Register a new discovery agent.
+
+**Request Body:**
+```json
+{
+  "name": "MalsiftAgent-Server01",
+  "description": "Discovery agent on Server01",
+  "platform": "linux",
+  "architecture": "x64",
+  "os_version": "Ubuntu 20.04",
+  "agent_version": "1.0.0",
+  "ip_address": "192.168.1.100",
+  "hostname": "server01",
+  "network_interface": "eth0",
+  "server_url": "https://malsift-server.com",
+  "ssl_enabled": true,
+  "api_key": "agent-api-key",
+  "company_id": "uuid",
+  "site_id": "uuid",
+  "target_networks": ["192.168.0.0/16", "10.0.0.0/8"],
+  "excluded_networks": ["127.0.0.0/8"],
+  "target_ports": [22, 23, 25, 53, 80, 110, 143, 443, 993, 995, 3389],
+  "excluded_ports": []
+}
+```
+
+**Response:**
+```json
+{
+  "agent_id": "unique-agent-id",
+  "agent_uuid": "uuid",
+  "status": "registered",
+  "message": "Agent 'MalsiftAgent-Server01' registered successfully"
+}
+```
+
+#### POST /agents/{agent_id}/heartbeat
+Update agent heartbeat.
+
+**Request Body:**
+```json
+{
+  "status": "active",
+  "cpu_usage": 25.5,
+  "memory_usage": 60.2,
+  "disk_usage": 45.8,
+  "network_usage": 1024000,
+  "agent_version": "1.0.0",
+  "os_version": "Ubuntu 20.04",
+  "uptime_seconds": 86400,
+  "active_scans": 2,
+  "queued_scans": 0,
+  "last_scan_duration": 120.5,
+  "error_count": 0,
+  "last_error": null,
+  "heartbeat_data": {
+    "python_version": "3.9.0",
+    "process_count": 150,
+    "boot_time": 1640995200
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Heartbeat updated successfully",
+  "next_heartbeat": "2024-01-15T10:31:00Z"
+}
+```
+
+#### POST /agents/{agent_id}/scan-results
+Submit scan results from agent.
+
+**Request Body:**
+```json
+{
+  "scan_type": "network_discovery",
+  "targets": ["192.168.1.0/24"],
+  "ports": [22, 23, 25, 53, 80, 110, 143, 443],
+  "scanner": "nmap",
+  "status": "completed",
+  "started_at": "2024-01-15T10:00:00Z",
+  "completed_at": "2024-01-15T10:02:00Z",
+  "duration_seconds": 120.0,
+  "devices_found": 15,
+  "ports_found": 45,
+  "services_found": 30,
+  "scan_results": {
+    "devices": [
+      {
+        "ip": "192.168.1.10",
+        "hostname": "server01",
+        "open_ports": [
+          {"port": 22, "protocol": "tcp", "state": "open"},
+          {"port": 80, "protocol": "tcp", "state": "open"}
+        ],
+        "services": [
+          {"port": 22, "protocol": "tcp", "service": "ssh"},
+          {"port": 80, "protocol": "tcp", "service": "http"}
+        ]
+      }
+    ]
+  },
+  "error_message": null,
+  "error_details": null
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Scan results submitted successfully",
+  "scan_id": "uuid",
+  "devices_found": 15
+}
+```
+
+#### GET /agents/{agent_id}/configuration
+Get agent configuration.
+
+**Response:**
+```json
+{
+  "agent_id": "unique-agent-id",
+  "server_url": "https://malsift-server.com",
+  "ssl_enabled": true,
+  "heartbeat_interval": 60,
+  "scan_enabled": true,
+  "scan_interval_minutes": 60,
+  "max_concurrent_scans": 5,
+  "scan_timeout_seconds": 300,
+  "target_networks": ["192.168.0.0/16", "10.0.0.0/8"],
+  "excluded_networks": ["127.0.0.0/8"],
+  "target_ports": [22, 23, 25, 53, 80, 110, 143, 443, 993, 995, 3389],
+  "excluded_ports": [],
+  "company_id": "uuid",
+  "site_id": "uuid"
+}
+```
+
+#### GET /agents/{agent_id}/status
+Get agent status and metrics.
+
+**Response:**
+```json
+{
+  "agent_id": "unique-agent-id",
+  "name": "MalsiftAgent-Server01",
+  "status": "active",
+  "platform": "linux",
+  "architecture": "x64",
+  "agent_version": "1.0.0",
+  "last_heartbeat": "2024-01-15T10:30:00Z",
+  "last_scan": "2024-01-15T10:00:00Z",
+  "total_scans": 150,
+  "successful_scans": 145,
+  "failed_scans": 5,
+  "devices_discovered": 1250,
+  "average_scan_duration": 120.5,
+  "error_count": 5,
+  "last_error": "Network timeout",
+  "recent_heartbeats": [
+    {
+      "status": "active",
+      "cpu_usage": 25.5,
+      "memory_usage": 60.2,
+      "received_at": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "recent_scans": [
+    {
+      "scan_type": "network_discovery",
+      "targets": ["192.168.1.0/24"],
+      "status": "completed",
+      "devices_found": 15,
+      "duration_seconds": 120.0,
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### GET /agents
+List all agents with optional filtering.
+
+**Query Parameters:**
+- `company_id`: Filter by company ID
+- `site_id`: Filter by site ID
+- `status`: Filter by status (active, inactive, offline, error)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "agent_id": "unique-agent-id",
+    "name": "MalsiftAgent-Server01",
+    "description": "Discovery agent on Server01",
+    "platform": "linux",
+    "architecture": "x64",
+    "status": "active",
+    "agent_version": "1.0.0",
+    "ip_address": "192.168.1.100",
+    "hostname": "server01",
+    "last_heartbeat": "2024-01-15T10:30:00Z",
+    "last_scan": "2024-01-15T10:00:00Z",
+    "total_scans": 150,
+    "devices_discovered": 1250,
+    "company_id": "uuid",
+    "site_id": "uuid",
+    "created_at": "2024-01-15T00:00:00Z"
+  }
+]
+```
+
+#### GET /agents/{agent_id}/updates
+Check for available updates for an agent.
+
+**Response:**
+```json
+{
+  "update_id": "uuid",
+  "version": "1.1.0",
+  "platform": "linux",
+  "architecture": "x64",
+  "release_notes": "Bug fixes and performance improvements",
+  "download_url": "https://github.com/malsiftcyber/MalsiftCND/releases/download/v1.1.0/malsift-agent-linux-x64",
+  "checksum": "sha256:abc123...",
+  "file_size": 15728640,
+  "is_required": false,
+  "released_at": "2024-01-15T00:00:00Z"
+}
+```
+
+#### POST /agents/updates
+Create a new agent update.
+
+**Request Body:**
+```json
+{
+  "version": "1.1.0",
+  "platform": "linux",
+  "architecture": "x64",
+  "release_notes": "Bug fixes and performance improvements",
+  "download_url": "https://github.com/malsiftcyber/MalsiftCND/releases/download/v1.1.0/malsift-agent-linux-x64",
+  "checksum": "sha256:abc123...",
+  "file_size": 15728640,
+  "is_required": false,
+  "rollout_percentage": 100,
+  "rollout_groups": ["production", "staging"]
+}
+```
+
+**Response:**
+```json
+{
+  "update_id": "uuid",
+  "version": "1.1.0",
+  "platform": "linux",
+  "architecture": "x64",
+  "message": "Update 1.1.0 created successfully"
+}
+```
+
+#### GET /agents/installers/{platform}/{architecture}
+Get agent installer script for platform.
+
+**Response:**
+```json
+{
+  "platform": "linux",
+  "architecture": "x64",
+  "installer_script": "#!/bin/bash\necho \"Installing MalsiftCND Discovery Agent...\"\n...",
+  "download_url": "https://github.com/malsiftcyber/MalsiftCND/releases/latest/download/malsift-agent-linux-x64",
+  "instructions": "Download and run the installer script to install the MalsiftCND Discovery Agent on linux x64"
+}
+```
+
+#### GET /agents/platforms
+Get supported platforms and architectures.
+
+**Response:**
+```json
+{
+  "platforms": [
+    {
+      "platform": "windows",
+      "name": "Windows",
+      "architectures": ["x86", "x64"],
+      "installer_types": ["exe", "msi"],
+      "service_type": "Windows Service"
+    },
+    {
+      "platform": "linux",
+      "name": "Linux",
+      "architectures": ["x86", "x64", "arm64"],
+      "installer_types": ["sh", "deb", "rpm"],
+      "service_type": "systemd"
+    },
+    {
+      "platform": "macos",
+      "name": "macOS",
+      "architectures": ["x64", "arm64"],
+      "installer_types": ["sh", "pkg"],
+      "service_type": "launchd"
+    }
+  ]
+}
+```
+
+#### GET /agents/releases
+Get available agent releases.
+
+**Response:**
+```json
+{
+  "releases": [
+    {
+      "version": "1.1.0",
+      "platform": "linux",
+      "architecture": "x64",
+      "release_notes": "Bug fixes and performance improvements",
+      "download_url": "https://github.com/malsiftcyber/MalsiftCND/releases/download/v1.1.0/malsift-agent-linux-x64",
+      "checksum": "sha256:abc123...",
+      "file_size": 15728640,
+      "is_required": false,
+      "released_at": "2024-01-15T00:00:00Z"
+    }
+  ],
+  "total_count": 1
+}
+```
+
+#### GET /agents/{agent_id}/scans
+Get scans performed by an agent.
+
+**Query Parameters:**
+- `limit`: Number of scans to return (default: 50)
+- `offset`: Number of scans to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "scan_type": "network_discovery",
+    "targets": ["192.168.1.0/24"],
+    "ports": [22, 23, 25, 53, 80, 110, 143, 443],
+    "scanner": "nmap",
+    "status": "completed",
+    "progress": 100,
+    "started_at": "2024-01-15T10:00:00Z",
+    "completed_at": "2024-01-15T10:02:00Z",
+    "duration_seconds": 120.0,
+    "devices_found": 15,
+    "ports_found": 45,
+    "services_found": 30,
+    "error_message": null,
+    "created_at": "2024-01-15T10:00:00Z"
+  }
+]
+```
+
+#### GET /agents/{agent_id}/heartbeats
+Get heartbeats from an agent.
+
+**Query Parameters:**
+- `limit`: Number of heartbeats to return (default: 100)
+- `offset`: Number of heartbeats to skip (default: 0)
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "status": "active",
+    "cpu_usage": 25.5,
+    "memory_usage": 60.2,
+    "disk_usage": 45.8,
+    "network_usage": 1024000,
+    "agent_version": "1.0.0",
+    "os_version": "Ubuntu 20.04",
+    "uptime_seconds": 86400,
+    "active_scans": 2,
+    "queued_scans": 0,
+    "last_scan_duration": 120.5,
+    "error_count": 0,
+    "last_error": null,
+    "received_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### DELETE /agents/{agent_id}
+Delete an agent (soft delete).
+
+**Response:**
+```json
+{
+  "message": "Agent 'MalsiftAgent-Server01' deleted successfully"
+}
+```
+
 ### Scheduling
 
 #### GET /scheduling/schedules

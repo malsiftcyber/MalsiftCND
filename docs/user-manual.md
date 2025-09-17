@@ -658,6 +658,219 @@ MalsiftCND features an advanced AI-based accuracy ranking system that continuous
 - **API Access**: Programmatic access to metrics
 - **Dashboard Embedding**: Embed metrics in external dashboards
 
+## Discovery Agent Deployment
+
+### Cross-Platform Agent System
+
+**Deployable Discovery Agents:**
+MalsiftCND includes a comprehensive cross-platform discovery agent system that can be deployed on Windows, Linux, and macOS systems to perform network discovery scans and report back to the main application.
+
+**Key Features:**
+- **Cross-Platform Support**: Windows, Linux, and macOS agents
+- **SSL-Encrypted Communication**: All agent-to-server communication is encrypted
+- **Automatic Updates**: Agents can automatically check for and download updates
+- **Heartbeat Monitoring**: Real-time agent status monitoring
+- **Configurable Scanning**: Customizable scan targets and schedules
+- **Service Integration**: Runs as system service on all platforms
+
+### Agent Architecture
+
+**Platform Support:**
+- **Windows**: Windows Service with x86 and x64 support
+- **Linux**: systemd service with x86, x64, and ARM64 support
+- **macOS**: launchd service with x64 and ARM64 support
+
+**Communication Protocol:**
+- **HTTPS/SSL**: All communication encrypted with TLS
+- **REST API**: Standard REST API for agent-server communication
+- **Heartbeat System**: Regular status updates every 60 seconds
+- **Scan Results**: Encrypted transmission of scan results
+- **Configuration Updates**: Secure configuration management
+
+**Agent Components:**
+- **Core Agent**: Main agent executable
+- **Configuration File**: JSON-based configuration
+- **Service Wrapper**: Platform-specific service management
+- **Update System**: Automatic update checking and installation
+
+### Agent Installation
+
+**Windows Installation:**
+1. Download the Windows agent installer from GitHub releases
+2. Run the installer as Administrator
+3. Configure the agent with your server URL
+4. The agent installs as a Windows Service and starts automatically
+
+**Linux Installation:**
+1. Download the Linux agent installer script
+2. Run the installer with sudo privileges
+3. Configure the agent with your server URL
+4. The agent installs as a systemd service and starts automatically
+
+**macOS Installation:**
+1. Download the macOS agent installer script
+2. Run the installer with sudo privileges
+3. Configure the agent with your server URL
+4. The agent installs as a launchd service and starts automatically
+
+**Installation Scripts:**
+- **Windows**: `install-windows-x64.bat`
+- **Linux**: `install-linux-x64.sh`
+- **macOS**: `install-macos-arm64.sh`
+
+### Agent Configuration
+
+**Configuration File (`agent_config.json`):**
+```json
+{
+  "server_url": "https://your-malsift-server.com",
+  "ssl_enabled": true,
+  "heartbeat_interval": 60,
+  "scan_enabled": true,
+  "scan_interval_minutes": 60,
+  "max_concurrent_scans": 5,
+  "scan_timeout_seconds": 300,
+  "target_networks": ["192.168.0.0/16", "10.0.0.0/8"],
+  "excluded_networks": ["127.0.0.0/8"],
+  "target_ports": [22, 23, 25, 53, 80, 110, 143, 443, 993, 995, 3389],
+  "excluded_ports": [],
+  "log_level": "INFO",
+  "log_file": "malsift_agent.log"
+}
+```
+
+**Configuration Parameters:**
+- **server_url**: URL of the MalsiftCND server
+- **ssl_enabled**: Enable SSL encryption for communication
+- **heartbeat_interval**: Seconds between heartbeat messages
+- **scan_enabled**: Enable automatic network scanning
+- **scan_interval_minutes**: Minutes between scan cycles
+- **max_concurrent_scans**: Maximum concurrent scans
+- **scan_timeout_seconds**: Timeout for individual scans
+- **target_networks**: Networks to scan (CIDR notation)
+- **excluded_networks**: Networks to exclude from scanning
+- **target_ports**: Ports to scan
+- **excluded_ports**: Ports to exclude from scanning
+- **log_level**: Logging level (DEBUG, INFO, WARNING, ERROR)
+- **log_file**: Path to log file
+
+### Agent Management
+
+**Agent Registration:**
+- Agents automatically register with the server on first startup
+- Each agent receives a unique agent ID
+- Registration includes platform, architecture, and network information
+- Agents are associated with companies and sites for multi-tenancy
+
+**Heartbeat System:**
+- Agents send heartbeat messages every 60 seconds
+- Heartbeats include system metrics (CPU, memory, disk usage)
+- Server tracks agent status and marks offline agents
+- Heartbeat data is stored for performance monitoring
+
+**Scan Execution:**
+- Agents perform network discovery scans based on configuration
+- Scans include ping sweeps and port scanning
+- Results are encrypted and transmitted to the server
+- Scan data is processed and integrated with device database
+
+**Update Management:**
+- Agents check for updates on startup and periodically
+- Updates are downloaded securely with checksum verification
+- Rollout percentages control update deployment
+- Required updates force immediate installation
+
+### Agent Monitoring
+
+**Status Monitoring:**
+- **Active**: Agent is running and communicating
+- **Inactive**: Agent is stopped or disabled
+- **Offline**: Agent has not sent heartbeat recently
+- **Error**: Agent encountered an error
+
+**Performance Metrics:**
+- **CPU Usage**: Current CPU utilization percentage
+- **Memory Usage**: Current memory utilization percentage
+- **Disk Usage**: Current disk utilization percentage
+- **Network Usage**: Network traffic in bytes per second
+- **Uptime**: Agent uptime in seconds
+- **Scan Performance**: Scan duration and success rates
+
+**Alert System:**
+- **Offline Alerts**: Notifications when agents go offline
+- **Performance Alerts**: Notifications for high resource usage
+- **Error Alerts**: Notifications for agent errors
+- **Update Alerts**: Notifications for available updates
+
+### Agent Security
+
+**Communication Security:**
+- **TLS Encryption**: All agent-server communication encrypted
+- **Certificate Validation**: Server certificate validation
+- **API Key Authentication**: Secure API key-based authentication
+- **Request Signing**: Request integrity verification
+
+**Data Protection:**
+- **Encrypted Storage**: Sensitive data encrypted at rest
+- **Secure Transmission**: All data encrypted in transit
+- **Access Control**: Role-based access to agent data
+- **Audit Logging**: Complete audit trail of agent activities
+
+**Network Security:**
+- **Firewall Rules**: Agents can be configured with firewall rules
+- **Network Segmentation**: Agents respect network boundaries
+- **Scan Throttling**: Rate limiting to prevent network overload
+- **Target Validation**: Validation of scan targets
+
+### Agent Troubleshooting
+
+**Common Issues:**
+- **Connection Failures**: Check server URL and network connectivity
+- **SSL Errors**: Verify SSL certificates and configuration
+- **Permission Errors**: Ensure agent has necessary system permissions
+- **Scan Failures**: Check target networks and port accessibility
+
+**Log Analysis:**
+- **Agent Logs**: Check agent log files for errors
+- **Server Logs**: Check server logs for agent communication issues
+- **System Logs**: Check system logs for service-related issues
+- **Network Logs**: Check network logs for connectivity issues
+
+**Diagnostic Tools:**
+- **Agent Status**: Check agent status and metrics
+- **Heartbeat History**: Review heartbeat data for patterns
+- **Scan Results**: Analyze scan results for issues
+- **Configuration Validation**: Verify agent configuration
+
+**Recovery Procedures:**
+- **Service Restart**: Restart agent service
+- **Configuration Reset**: Reset to default configuration
+- **Agent Reinstall**: Reinstall agent if necessary
+- **Update Rollback**: Rollback to previous agent version
+
+### Agent API Integration
+
+**REST API Endpoints:**
+- `POST /api/v1/agents/register` - Register new agent
+- `POST /api/v1/agents/{id}/heartbeat` - Send heartbeat
+- `POST /api/v1/agents/{id}/scan-results` - Submit scan results
+- `GET /api/v1/agents/{id}/configuration` - Get agent configuration
+- `GET /api/v1/agents/{id}/status` - Get agent status
+- `GET /api/v1/agents` - List all agents
+- `GET /api/v1/agents/{id}/updates` - Check for updates
+- `POST /api/v1/agents/updates` - Create agent update
+
+**API Authentication:**
+- **Bearer Token**: JWT-based authentication
+- **API Key**: Agent-specific API keys
+- **Role-Based Access**: Different access levels for different users
+
+**Data Formats:**
+- **JSON**: All API communication uses JSON
+- **ISO Timestamps**: Standardized timestamp format
+- **Error Codes**: Standardized error response format
+- **Pagination**: Standardized pagination for large datasets
+
 ## Scan Scheduling
 
 ### Automated Discovery Scans

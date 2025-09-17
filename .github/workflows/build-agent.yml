@@ -1,0 +1,144 @@
+name: Build Discovery Agent
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'agent/**'
+      - 'scripts/**'
+      - '.github/workflows/build-agent.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'agent/**'
+      - 'scripts/**'
+      - '.github/workflows/build-agent.yml'
+  release:
+    types: [ published ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller psutil aiohttp
+    
+    - name: Build Windows agent
+      run: |
+        python scripts/build_agent.py
+    
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: malsift-agent-windows
+        path: |
+          dist/malsift-agent-windows-*.exe
+          installers/install-windows-*.bat
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [x86_64, aarch64]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller psutil aiohttp
+        sudo apt-get update
+        sudo apt-get install -y nmap
+    
+    - name: Build Linux agent
+      run: |
+        python scripts/build_agent.py
+    
+    - name: Upload Linux artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: malsift-agent-linux-${{ matrix.architecture }}
+        path: |
+          dist/malsift-agent-linux-*
+          installers/install-linux-*.sh
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller psutil aiohttp
+        brew install nmap
+    
+    - name: Build macOS agent
+      run: |
+        python scripts/build_agent.py
+    
+    - name: Upload macOS artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: malsift-agent-macos-${{ matrix.architecture }}
+        path: |
+          dist/malsift-agent-macos-*
+          installers/install-macos-*.sh
+
+  create-release:
+    if: github.event_name == 'release'
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+    
+    - name: Create release assets
+      run: |
+        mkdir -p release-assets
+        
+        # Copy Windows artifacts
+        cp malsift-agent-windows/*.exe release-assets/ || true
+        cp malsift-agent-windows/*.bat release-assets/ || true
+        
+        # Copy Linux artifacts
+        cp malsift-agent-linux-*/malsift-agent-linux-* release-assets/ || true
+        cp malsift-agent-linux-*/install-linux-*.sh release-assets/ || true
+        
+        # Copy macOS artifacts
+        cp malsift-agent-macos-*/malsift-agent-macos-* release-assets/ || true
+        cp malsift-agent-macos-*/install-macos-*.sh release-assets/ || true
+        
+        # Create checksums
+        cd release-assets
+        sha256sum * > checksums.txt
+    
+    - name: Upload release assets
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-assets
+        path: release-assets/
