@@ -30,10 +30,27 @@ MalsiftCND is an advanced network discovery and attack surface management platfo
 ### Ubuntu 24.04 LTS Installation
 
 **Prerequisites Installation**:
+
+**Option 1: Direct Download (Recommended)**:
 ```bash
-# Install all required system components
-curl -fsSL https://raw.githubusercontent.com/malsiftcyber/MalsiftCND/main/scripts/install-prerequisites-ubuntu.sh | bash
+# Download and run the installation script
+wget https://raw.githubusercontent.com/malsiftcyber/MalsiftCND/main/scripts/install-prerequisites-ubuntu.sh
+chmod +x install-prerequisites-ubuntu.sh
+./install-prerequisites-ubuntu.sh
 ```
+
+**Option 2: Clone Repository First**:
+```bash
+# Clone the repository first
+git clone https://github.com/malsiftcyber/MalsiftCND.git
+cd MalsiftCND
+
+# Run the installation script
+./scripts/install-prerequisites-ubuntu.sh
+```
+
+**Option 3: Manual Installation**:
+Follow the detailed instructions in the [Installation Guide](docs/installation.md)
 
 **MalsiftCND Installation**:
 ```bash

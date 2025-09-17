@@ -30,9 +30,55 @@ This guide will help you install MalsiftCND on your system.
 Before installing MalsiftCND, you need to install the required system components:
 
 **Quick Installation (Recommended)**:
+
+**Option 1: Direct Download**:
 ```bash
-# Download and run the automated installation script
+# Download and run the installation script
+wget https://raw.githubusercontent.com/malsiftcyber/MalsiftCND/main/scripts/install-prerequisites-ubuntu.sh
+chmod +x install-prerequisites-ubuntu.sh
+./install-prerequisites-ubuntu.sh
+```
+
+**Option 2: Clone Repository First**:
+```bash
+# Clone the repository first
+git clone https://github.com/malsiftcyber/MalsiftCND.git
+cd MalsiftCND
+
+# Run the installation script
+./scripts/install-prerequisites-ubuntu.sh
+```
+
+**Option 3: One-liner (if repository is public)**:
+```bash
+# Download and run in one command
 curl -fsSL https://raw.githubusercontent.com/malsiftcyber/MalsiftCND/main/scripts/install-prerequisites-ubuntu.sh | bash
+```
+
+**Option 4: Inline Script (if repository access issues)**:
+```bash
+# Copy and paste this script directly into your terminal
+cat > install-prereqs.sh << 'EOF'
+#!/bin/bash
+set -e
+echo "Installing MalsiftCND Prerequisites for Ubuntu 24.04 LTS..."
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin python3.11 python3.11-venv python3.11-dev python3.11-pip build-essential libssl-dev libffi-dev postgresql postgresql-contrib redis-server redis-tools nmap masscan git curl wget openssl ca-certificates htop iotop
+sudo usermod -aG docker $USER
+sudo systemctl enable docker && sudo systemctl start docker
+sudo systemctl enable postgresql && sudo systemctl start postgresql
+sudo systemctl enable redis-server && sudo systemctl start redis-server
+sudo -u postgres psql -c "CREATE DATABASE malsift;" 2>/dev/null || true
+sudo -u postgres psql -c "CREATE USER malsift WITH PASSWORD 'malsift';" 2>/dev/null || true
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE malsift TO malsift;" 2>/dev/null || true
+sudo -u postgres psql -c "ALTER USER malsift CREATEDB;" 2>/dev/null || true
+echo "Installation completed! Please logout and login again for Docker group membership."
+EOF
+chmod +x install-prereqs.sh && ./install-prereqs.sh
 ```
 
 **Manual Installation**:
@@ -395,6 +441,12 @@ SSL_CERTFILE=./certs/your-certificate.pem
 - Install Docker Compose plugin: `sudo apt install docker-compose-plugin`
 - Or install standalone: Follow the Docker Compose installation section above
 - Verify installation: `docker compose version` or `docker-compose --version`
+
+**404 Error when downloading installation script**:
+- The repository might be private or not yet public
+- Use Option 2: Clone the repository first, then run the script locally
+- Use Option 4: Copy the inline script directly into your terminal
+- Check if the repository URL is correct: `https://github.com/malsiftcyber/MalsiftCND`
 
 **Permission denied for Docker**:
 - Add user to docker group: `sudo usermod -aG docker $USER`
