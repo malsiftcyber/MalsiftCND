@@ -18,7 +18,7 @@ cryptography>=41.0.0,<44.0.0
 
 # Network Scanning
 python-nmap==0.7.1
-masscan==0.1.6
+# Note: masscan is installed as a system package (via apt-get), not a Python package
 scapy==2.5.0
 requests==2.31.0
 aiohttp==3.9.1
