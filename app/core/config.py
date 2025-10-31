@@ -3,11 +3,17 @@ Configuration management for MalsiftCND
 """
 import os
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings"""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True
+    )
     
     # Application
     APP_NAME: str = "MalsiftCND"
@@ -77,21 +83,19 @@ class Settings(BaseSettings):
     LOGS_DIR: str = "./logs"
     CERTS_DIR: str = "./certs"
     
-    @validator("SECRET_KEY")
+    @field_validator("SECRET_KEY")
+    @classmethod
     def validate_secret_key(cls, v):
         if not v or len(v) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters long")
         return v
     
-    @validator("JWT_SECRET_KEY")
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
     def validate_jwt_secret_key(cls, v):
         if not v or len(v) < 32:
             raise ValueError("JWT_SECRET_KEY must be at least 32 characters long")
         return v
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 # Create settings instance
