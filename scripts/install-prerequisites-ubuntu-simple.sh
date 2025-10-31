@@ -96,6 +96,25 @@ install_docker() {
     print_warning "You need to logout and login again for Docker group membership to take effect"
 }
 
+# Function to fix distutils warning on Ubuntu 24.04
+fix_distutils_warning() {
+    print_status "Fixing Python distutils warning (Ubuntu 24.04 compatibility)..."
+    
+    # The distutils-precedence.pth file causes warnings with Python 3.12+
+    # Install setuptools which provides distutils compatibility, or disable the .pth file
+    if [ -f /usr/lib/python3/dist-packages/distutils-precedence.pth ]; then
+        # Install setuptools to provide distutils compatibility for system Python 3.12
+        sudo python3 -m pip install --upgrade setuptools 2>/dev/null || true
+        # Alternative: rename the problematic .pth file if setuptools doesn't help
+        if [ -f /usr/lib/python3/dist-packages/distutils-precedence.pth ]; then
+            sudo mv /usr/lib/python3/dist-packages/distutils-precedence.pth \
+                   /usr/lib/python3/dist-packages/distutils-precedence.pth.disabled 2>/dev/null || true
+        fi
+    fi
+    
+    print_success "Distutils warning fixed (if applicable)"
+}
+
 # Function to install Python (system default)
 install_python() {
     print_status "Installing Python and development tools..."
@@ -107,6 +126,9 @@ install_python() {
     # Verify Python installation
     python3 --version
     pip3 --version
+    
+    # Fix distutils warning for system Python 3.12 (Ubuntu 24.04)
+    fix_distutils_warning
     
     print_success "Python installed successfully"
 }
@@ -279,6 +301,9 @@ main() {
     install_redis
     install_network_tools
     install_additional_deps
+    
+    # Fix any system-wide Python warnings (after all packages are installed)
+    fix_distutils_warning
     
     # Setup database
     create_database

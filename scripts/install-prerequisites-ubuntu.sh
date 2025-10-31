@@ -113,6 +113,25 @@ install_docker_compose_standalone() {
     print_success "Docker Compose standalone installed successfully"
 }
 
+# Function to fix distutils warning on Ubuntu 24.04
+fix_distutils_warning() {
+    print_status "Fixing Python distutils warning (Ubuntu 24.04 compatibility)..."
+    
+    # The distutils-precedence.pth file causes warnings with Python 3.12+
+    # Install setuptools which provides distutils compatibility, or disable the .pth file
+    if [ -f /usr/lib/python3/dist-packages/distutils-precedence.pth ]; then
+        # Install setuptools to provide distutils compatibility for system Python 3.12
+        sudo python3.12 -m pip install --upgrade setuptools 2>/dev/null || true
+        # Alternative: rename the problematic .pth file if setuptools doesn't help
+        if [ -f /usr/lib/python3/dist-packages/distutils-precedence.pth ]; then
+            sudo mv /usr/lib/python3/dist-packages/distutils-precedence.pth \
+                   /usr/lib/python3/dist-packages/distutils-precedence.pth.disabled 2>/dev/null || true
+        fi
+    fi
+    
+    print_success "Distutils warning fixed (if applicable)"
+}
+
 # Function to install Python 3.11
 install_python() {
     if command_exists python3.11; then
@@ -139,6 +158,9 @@ install_python() {
     # Create symlinks for easier access
     sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
     sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+    
+    # Fix distutils warning for system Python 3.12 (Ubuntu 24.04)
+    fix_distutils_warning
     
     print_success "Python 3.11 installed successfully"
 }
@@ -312,6 +334,9 @@ main() {
     install_redis
     install_network_tools
     install_additional_deps
+    
+    # Fix any system-wide Python warnings (after all packages are installed)
+    fix_distutils_warning
     
     # Setup database
     create_database
