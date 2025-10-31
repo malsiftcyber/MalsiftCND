@@ -72,6 +72,37 @@ if os.path.exists("frontend/dist"):
     app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 
 
+@app.get("/")
+async def root():
+    """Root endpoint - API information"""
+    docs_url = "/api/docs" if settings.DEBUG else None
+    return {
+        "name": settings.APP_NAME,
+        "version": settings.VERSION,
+        "status": "operational",
+        "endpoints": {
+            "health": "/health",
+            "status": "/api/status",
+            "api": "/api/v1",
+            "docs": docs_url,
+            "redoc": "/api/redoc" if settings.DEBUG else None
+        },
+        "available_api_routes": [
+            "/api/v1/auth",
+            "/api/v1/scans",
+            "/api/v1/devices",
+            "/api/v1/integrations",
+            "/api/v1/exports",
+            "/api/v1/scheduling",
+            "/api/v1/tagging",
+            "/api/v1/edr",
+            "/api/v1/accuracy",
+            "/api/v1/agents",
+            "/api/v1/admin"
+        ]
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
