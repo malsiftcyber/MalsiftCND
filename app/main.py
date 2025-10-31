@@ -2,6 +2,7 @@
 MalsiftCND - Main Application Entry Point
 """
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,7 +64,6 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(api_router, prefix="/api/v1")
 
 # Serve static files (if directory exists)
-import os
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
