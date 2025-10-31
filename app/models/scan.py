@@ -1,7 +1,7 @@
 """
 Scan database model
 """
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Enum
+from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Enum, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
