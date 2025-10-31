@@ -62,11 +62,14 @@ app.add_middleware(RateLimitMiddleware)
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
-# Serve static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve static files (if directory exists)
+import os
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve frontend
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+# Serve frontend (if directory exists)
+if os.path.exists("frontend/dist"):
+    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 
 
 @app.get("/health")
