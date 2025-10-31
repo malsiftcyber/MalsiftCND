@@ -4,6 +4,7 @@ Device database model
 from sqlalchemy import Column, String, Float, DateTime, Text, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 
 from app.core.database import Base
