@@ -7,6 +7,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://malsift:malsift@db:5432/malsift
       - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production-must-be-at-least-32-characters-long}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-jwt-secret-key-in-production-must-be-at-least-32-characters-long}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       - db
       - redis
@@ -38,6 +42,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://malsift:malsift@db:5432/malsift
       - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production-must-be-at-least-32-characters-long}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-jwt-secret-key-in-production-must-be-at-least-32-characters-long}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       - db
       - redis
@@ -53,6 +61,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://malsift:malsift@db:5432/malsift
       - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production-must-be-at-least-32-characters-long}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-jwt-secret-key-in-production-must-be-at-least-32-characters-long}
     depends_on:
       - redis
     restart: unless-stopped
