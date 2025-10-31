@@ -1,7 +1,7 @@
 """
 Device correction model for handling mis-identifications
 """
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Boolean, Float
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Boolean, Float, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
