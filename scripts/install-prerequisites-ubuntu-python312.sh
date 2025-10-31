@@ -41,10 +41,16 @@ check_root() {
     fi
 }
 
-# Function to check sudo privileges
+# Function to check sudo availability
 check_sudo() {
-    if ! sudo -n true 2>/dev/null; then
-        print_error "This script requires sudo privileges. Please run with sudo access."
+    if ! command_exists sudo; then
+        print_error "This script requires sudo to be installed. Please install sudo first."
+        exit 1
+    fi
+    # Test if we can actually use sudo (may prompt for password)
+    print_status "Checking sudo access (you may be prompted for your password)..."
+    if ! sudo -v; then
+        print_error "Unable to obtain sudo privileges. Please ensure you have sudo access."
         exit 1
     fi
 }
