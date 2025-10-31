@@ -17,7 +17,7 @@ from app.models.accuracy_ranking import (
 from app.models.device import Device
 from app.models.edr_integration import EDREndpoint
 from app.models.device_correction import DeviceCorrection
-from app.services.ai.llm_analyzer import LLMAnalyzer
+from app.ai.llm_analyzer import LLMAnalyzer
 
 
 class AccuracyRankingService:
