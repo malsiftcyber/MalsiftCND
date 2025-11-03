@@ -171,6 +171,31 @@ chmod +x install-prereqs.sh && ./install-prereqs.sh
 
 #### MalsiftCND Installation
 
+**Quick Installation (Recommended - Unified Script)**:
+
+The unified installation script handles everything automatically:
+```bash
+# Clone the repository
+git clone https://github.com/malsiftcyber/MalsiftCND.git
+cd MalsiftCND
+
+# Run the unified installation script
+./scripts/install-malsiftcnd.sh
+```
+
+This script will:
+1. ✅ Check and install prerequisites (if needed)
+2. ✅ Generate secure secret keys automatically
+3. ✅ Create `.env` configuration file
+4. ✅ Prompt you for admin user credentials
+5. ✅ Build and start Docker containers
+6. ✅ Initialize the database
+7. ✅ Create the admin user automatically
+
+**Manual Installation (Alternative)**:
+
+If you prefer to install manually:
+
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/malsiftcyber/MalsiftCND.git
@@ -436,21 +461,39 @@ SSL_CERTFILE=./certs/your-certificate.pem
 
 ## Post-Installation
 
-1. **Create admin user**:
+**Note**: If you used the unified installation script (`install-malsiftcnd.sh`), the admin user was already created during installation. You can skip step 1.
+
+1. **Create admin user** (only if installing manually):
+   
+   If you installed manually and need to create an admin user, you can use:
+   
+   **Option A - Via Database** (requires database access):
    ```bash
-   curl -X POST http://localhost:8000/api/v1/admin/users \
+   # Connect to database container
+   docker compose exec db psql -U malsift -d malsift
+   
+   # Then manually insert user (password needs to be hashed first)
+   ```
+   
+   **Option B - Via API** (requires a registration endpoint or temporary bypass):
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/auth/register \
      -H "Content-Type: application/json" \
      -d '{
        "username": "admin",
        "email": "admin@yourcompany.com",
-       "password": "secure-password",
-       "is_admin": true
+       "password": "secure-password"
      }'
+   ```
+   
+   **Option C - Use the admin creation script**:
+   ```bash
+   # The unified install script includes this - you can extract the Python script if needed
    ```
 
 2. **Access web interface**:
    - Open browser to `http://localhost:8000` (or your domain)
-   - Login with admin credentials
+   - Login with admin credentials created during installation
    - Configure integrations and scanning settings
 
 3. **Verify functionality**:
