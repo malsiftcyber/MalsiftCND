@@ -58,19 +58,35 @@ check_sudo() {
     sudo -v
 }
 
-# Detect docker compose command
+# Detect docker compose command (with fallback to sudo if needed)
 detect_docker_compose() {
+    # Try docker compose plugin first
     if docker compose version >/dev/null 2>&1; then
         DOCKER_COMPOSE_CMD="docker compose"
+        DOCKER_SUDO=""
         print_success "Using Docker Compose plugin"
-    elif command_exists docker-compose; then
+        return 0
+    elif sudo docker compose version >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="docker compose"
+        DOCKER_SUDO="sudo"
+        print_warning "Using Docker Compose plugin with sudo (user may need to logout/login)"
+        return 0
+    # Try docker-compose standalone
+    elif command_exists docker-compose && docker-compose --version >/dev/null 2>&1; then
         DOCKER_COMPOSE_CMD="docker-compose"
+        DOCKER_SUDO=""
         print_success "Using Docker Compose standalone"
+        return 0
+    elif command_exists docker-compose && sudo docker-compose --version >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="docker-compose"
+        DOCKER_SUDO="sudo"
+        print_warning "Using Docker Compose standalone with sudo (user may need to logout/login)"
+        return 0
     else
         DOCKER_COMPOSE_CMD=""
+        DOCKER_SUDO=""
         return 1
     fi
-    return 0
 }
 
 # Check prerequisites
@@ -96,13 +112,22 @@ check_prerequisites() {
         read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
             install_prerequisites
-            # Re-check after installation
+            # Re-check after installation - wait a moment for services to settle
+            sleep 2
             if ! detect_docker_compose; then
                 print_error "Docker Compose is still not available. Please install it manually."
                 exit 1
             fi
         else
             print_error "Please install missing prerequisites and run this script again."
+            exit 1
+        fi
+    fi
+    
+    # Ensure Docker Compose command is set
+    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        if ! detect_docker_compose; then
+            print_error "Docker Compose detection failed. Cannot proceed."
             exit 1
         fi
     fi
@@ -115,17 +140,37 @@ install_prerequisites() {
     if [ -f "scripts/install-prerequisites-ubuntu.sh" ]; then
         print_status "Running prerequisites installation script..."
         bash scripts/install-prerequisites-ubuntu.sh
+        
+        # Add user to docker group if not already added
+        if ! groups | grep -q docker; then
+            print_status "Adding user to docker group..."
+            sudo usermod -aG docker $USER
+            print_warning "User added to docker group. You may need to logout/login for it to take effect."
+            print_status "Attempting to activate docker group in current session..."
+            newgrp docker <<EOF || true
+print_status "Docker group activated"
+EOF
+        fi
+        
+        # Wait a moment for Docker to be available
+        sleep 2
+        
+        # Verify Docker is working
+        if ! docker ps >/dev/null 2>&1; then
+            print_warning "Docker may not be accessible yet. Trying with sudo..."
+            if sudo docker ps >/dev/null 2>&1; then
+                print_warning "Docker works with sudo. You may need to logout/login for user access."
+                print_status "For now, Docker commands will work. Continuing installation..."
+            else
+                print_error "Docker is not working. Please ensure Docker service is running:"
+                echo "  sudo systemctl start docker"
+                echo "  sudo systemctl enable docker"
+                exit 1
+            fi
+        fi
     else
         print_error "Prerequisites script not found. Please run install-prerequisites-ubuntu.sh first."
         exit 1
-    fi
-    
-    # Verify Docker is working
-    if ! docker ps >/dev/null 2>&1; then
-        print_warning "Docker may require logout/login to work. Attempting to use newgrp..."
-        newgrp docker <<EOF
-docker ps >/dev/null 2>&1 || print_error "Docker is not working. Please logout and login again, then rerun this script."
-EOF
     fi
 }
 
@@ -258,10 +303,10 @@ start_containers() {
     fi
     
     print_status "Building Docker images (this may take several minutes)..."
-    $DOCKER_COMPOSE_CMD build
+    $DOCKER_SUDO $DOCKER_COMPOSE_CMD build
     
     print_status "Starting containers..."
-    $DOCKER_COMPOSE_CMD up -d
+    $DOCKER_SUDO $DOCKER_COMPOSE_CMD up -d
     
     print_status "Waiting for services to be ready..."
     sleep 5
@@ -270,7 +315,7 @@ start_containers() {
     local max_attempts=30
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if $DOCKER_COMPOSE_CMD exec -T db pg_isready -U malsift >/dev/null 2>&1; then
+        if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T db pg_isready -U malsift >/dev/null 2>&1; then
             print_success "Database is ready"
             break
         fi
@@ -282,9 +327,9 @@ start_containers() {
     
     if [ $attempt -eq $max_attempts ]; then
         print_error "Database did not become ready in time"
-        $DOCKER_COMPOSE_CMD logs db
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs db
         print_status "Checking container status..."
-        $DOCKER_COMPOSE_CMD ps
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps
         exit 1
     fi
     
@@ -303,9 +348,9 @@ start_containers() {
     echo ""
     
     if [ $attempt -eq $max_attempts ]; then
-        print_warning "Application may not be fully ready. Check logs with: $DOCKER_COMPOSE_CMD logs app"
+        print_warning "Application may not be fully ready. Check logs with: $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app"
         print_status "Checking container status..."
-        $DOCKER_COMPOSE_CMD ps
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps
     fi
 }
 
@@ -410,8 +455,23 @@ PYTHON_EOF
             print_status "You can manually create the admin user later using the API or database."
         fi
     else
-        print_error "Failed to create admin user. You can create it manually:"
-        echo "  1. Wait for app to fully start: $DOCKER_COMPOSE_CMD logs app"
+    # Ensure we have docker compose command
+    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        if ! detect_docker_compose; then
+            print_error "Docker Compose is not available. Cannot create admin user."
+            return 1
+        fi
+    fi
+    
+    # Copy script to container and run it
+    $DOCKER_SUDO $DOCKER_COMPOSE_CMD cp /tmp/create_admin.py app:/tmp/create_admin.py
+    
+    # Wait for database to be fully ready
+    print_status "Waiting for database to be ready..."
+    sleep 5
+    
+    # Run the script
+    if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>&1 | tee /tmp/create_admin_output.txt; then
         echo "  2. Use API: curl -X POST http://localhost:8000/api/v1/auth/register ..."
         echo "  3. Or use database directly"
     fi
@@ -463,10 +523,10 @@ main() {
     echo "  - Email: $ADMIN_EMAIL"
     echo ""
     echo "Useful Commands:"
-    echo "  - View logs: $DOCKER_COMPOSE_CMD logs -f app"
-    echo "  - Stop services: $DOCKER_COMPOSE_CMD down"
-    echo "  - Restart services: $DOCKER_COMPOSE_CMD restart"
-    echo "  - View status: $DOCKER_COMPOSE_CMD ps"
+    echo "  - View logs: $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs -f app"
+    echo "  - Stop services: $DOCKER_SUDO $DOCKER_COMPOSE_CMD down"
+    echo "  - Restart services: $DOCKER_SUDO $DOCKER_COMPOSE_CMD restart"
+    echo "  - View status: $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps"
     echo ""
     print_status "You can now login to the web interface with your admin credentials!"
     echo ""
