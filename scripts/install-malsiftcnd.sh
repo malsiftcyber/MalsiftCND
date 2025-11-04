@@ -111,8 +111,11 @@ check_prerequisites() {
         print_error "Some prerequisites are missing. Would you like to install them now? (y/n)"
         read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            echo "[DEBUG] About to call install_prerequisites..."
             install_prerequisites
             local install_exit_code=$?
+            echo "[DEBUG] install_prerequisites returned with exit code: $install_exit_code"
+            
             if [ $install_exit_code -ne 0 ]; then
                 print_error "Prerequisites installation failed with exit code $install_exit_code"
                 exit 1
@@ -145,6 +148,7 @@ check_prerequisites() {
             else
                 print_success "Docker Compose detected successfully"
             fi
+            echo "[DEBUG] Finished re-checking Docker Compose, continuing..."
         else
             print_error "Please install missing prerequisites and run this script again."
             exit 1
@@ -180,6 +184,7 @@ install_prerequisites() {
         fi
         
         print_status "Prerequisites script finished. Continuing with post-installation steps..."
+        echo "[DEBUG] Post-installation step 1: Checking docker group..."
         
         # Add user to docker group if not already added
         if ! groups | grep -q docker; then
@@ -191,11 +196,13 @@ install_prerequisites() {
 print_status "Docker group activated"
 EOF
         fi
+        echo "[DEBUG] Post-installation step 2: Waiting for Docker..."
         
         # Wait a moment for Docker to be available
         sleep 2
         
         # Verify Docker is working
+        echo "[DEBUG] Post-installation step 3: Verifying Docker..."
         if ! docker ps >/dev/null 2>&1; then
             print_warning "Docker may not be accessible yet. Trying with sudo..."
             if sudo docker ps >/dev/null 2>&1; then
@@ -209,6 +216,7 @@ EOF
             fi
         fi
         
+        echo "[DEBUG] Post-installation step 4: Success!"
         print_success "Prerequisites installation completed"
         return 0
     else
