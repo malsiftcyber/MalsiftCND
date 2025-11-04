@@ -198,10 +198,8 @@ install_prerequisites() {
             print_status "Adding user to docker group..."
             sudo usermod -aG docker $USER
             print_warning "User added to docker group. You may need to logout/login for it to take effect."
-            print_status "Attempting to activate docker group in current session..."
-            newgrp docker <<EOF || true
-print_status "Docker group activated"
-EOF
+            print_status "Note: Docker commands will use sudo until you logout/login"
+            # Don't use newgrp here as it creates a subshell
         fi
         echo "[DEBUG] Post-installation step 2: Waiting for Docker..."
         
