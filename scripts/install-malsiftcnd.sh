@@ -58,6 +58,21 @@ check_sudo() {
     sudo -v
 }
 
+# Detect docker compose command
+detect_docker_compose() {
+    if docker compose version >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="docker compose"
+        print_success "Using Docker Compose plugin"
+    elif command_exists docker-compose; then
+        DOCKER_COMPOSE_CMD="docker-compose"
+        print_success "Using Docker Compose standalone"
+    else
+        DOCKER_COMPOSE_CMD=""
+        return 1
+    fi
+    return 0
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_header "Checking Prerequisites"
@@ -71,18 +86,9 @@ check_prerequisites() {
         print_success "Docker is installed: $(docker --version)"
     fi
     
-    if ! command_exists docker; then
+    if ! detect_docker_compose; then
         print_warning "Docker Compose is not installed"
         missing=$((missing + 1))
-    else
-        if docker compose version >/dev/null 2>&1; then
-            print_success "Docker Compose plugin is installed: $(docker compose version)"
-        elif command_exists docker-compose; then
-            print_success "Docker Compose standalone is installed: $(docker-compose --version)"
-        else
-            print_warning "Docker Compose is not available"
-            missing=$((missing + 1))
-        fi
     fi
     
     if [ $missing -gt 0 ]; then
@@ -90,6 +96,11 @@ check_prerequisites() {
         read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
             install_prerequisites
+            # Re-check after installation
+            if ! detect_docker_compose; then
+                print_error "Docker Compose is still not available. Please install it manually."
+                exit 1
+            fi
         else
             print_error "Please install missing prerequisites and run this script again."
             exit 1
@@ -238,11 +249,19 @@ create_directories() {
 start_containers() {
     print_header "Building and Starting Docker Containers"
     
+    # Ensure we have docker compose command
+    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        if ! detect_docker_compose; then
+            print_error "Docker Compose is not available. Cannot proceed."
+            exit 1
+        fi
+    fi
+    
     print_status "Building Docker images (this may take several minutes)..."
-    docker compose build
+    $DOCKER_COMPOSE_CMD build
     
     print_status "Starting containers..."
-    docker compose up -d
+    $DOCKER_COMPOSE_CMD up -d
     
     print_status "Waiting for services to be ready..."
     sleep 5
@@ -251,7 +270,7 @@ start_containers() {
     local max_attempts=30
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if docker compose exec -T db pg_isready -U malsift >/dev/null 2>&1; then
+        if $DOCKER_COMPOSE_CMD exec -T db pg_isready -U malsift >/dev/null 2>&1; then
             print_success "Database is ready"
             break
         fi
@@ -263,7 +282,9 @@ start_containers() {
     
     if [ $attempt -eq $max_attempts ]; then
         print_error "Database did not become ready in time"
-        docker compose logs db
+        $DOCKER_COMPOSE_CMD logs db
+        print_status "Checking container status..."
+        $DOCKER_COMPOSE_CMD ps
         exit 1
     fi
     
@@ -282,7 +303,9 @@ start_containers() {
     echo ""
     
     if [ $attempt -eq $max_attempts ]; then
-        print_warning "Application may not be fully ready. Check logs with: docker compose logs app"
+        print_warning "Application may not be fully ready. Check logs with: $DOCKER_COMPOSE_CMD logs app"
+        print_status "Checking container status..."
+        $DOCKER_COMPOSE_CMD ps
     fi
 }
 
@@ -361,15 +384,23 @@ if __name__ == "__main__":
     asyncio.run(create_admin())
 PYTHON_EOF
 
+    # Ensure we have docker compose command
+    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        if ! detect_docker_compose; then
+            print_error "Docker Compose is not available. Cannot create admin user."
+            return 1
+        fi
+    fi
+    
     # Copy script to container and run it
-    docker compose cp /tmp/create_admin.py app:/tmp/create_admin.py
+    $DOCKER_COMPOSE_CMD cp /tmp/create_admin.py app:/tmp/create_admin.py
     
     # Wait for database to be fully ready
     print_status "Waiting for database to be ready..."
     sleep 5
     
     # Run the script
-    if docker compose exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>&1 | tee /tmp/create_admin_output.txt; then
+    if $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>&1 | tee /tmp/create_admin_output.txt; then
         if grep -q "SUCCESS:" /tmp/create_admin_output.txt; then
             print_success "Admin user created successfully"
         elif grep -q "already exists" /tmp/create_admin_output.txt; then
@@ -380,7 +411,7 @@ PYTHON_EOF
         fi
     else
         print_error "Failed to create admin user. You can create it manually:"
-        echo "  1. Wait for app to fully start: docker compose logs app"
+        echo "  1. Wait for app to fully start: $DOCKER_COMPOSE_CMD logs app"
         echo "  2. Use API: curl -X POST http://localhost:8000/api/v1/auth/register ..."
         echo "  3. Or use database directly"
     fi
@@ -432,10 +463,10 @@ main() {
     echo "  - Email: $ADMIN_EMAIL"
     echo ""
     echo "Useful Commands:"
-    echo "  - View logs: docker compose logs -f app"
-    echo "  - Stop services: docker compose down"
-    echo "  - Restart services: docker compose restart"
-    echo "  - View status: docker compose ps"
+    echo "  - View logs: $DOCKER_COMPOSE_CMD logs -f app"
+    echo "  - Stop services: $DOCKER_COMPOSE_CMD down"
+    echo "  - Restart services: $DOCKER_COMPOSE_CMD restart"
+    echo "  - View status: $DOCKER_COMPOSE_CMD ps"
     echo ""
     print_status "You can now login to the web interface with your admin credentials!"
     echo ""
