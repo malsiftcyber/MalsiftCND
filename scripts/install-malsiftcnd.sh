@@ -437,14 +437,6 @@ PYTHON_EOF
         fi
     fi
     
-    # Ensure we have docker compose command
-    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
-        if ! detect_docker_compose; then
-            print_error "Docker Compose is not available. Cannot create admin user."
-            return 1
-        fi
-    fi
-    
     # Copy script to container and run it
     $DOCKER_SUDO $DOCKER_COMPOSE_CMD cp /tmp/create_admin.py app:/tmp/create_admin.py
     
