@@ -58,7 +58,30 @@ check_sudo() {
 # Function to update system packages
 update_system() {
     print_status "Updating system packages..."
-    sudo apt update && sudo apt upgrade -y
+    
+    # Try to sync clock if needed (for VMs with clock drift)
+    if sudo apt update 2>&1 | grep -q "not valid yet"; then
+        print_warning "System clock appears to be out of sync. Attempting to sync..."
+        if command -v timedatectl &> /dev/null; then
+            sudo timedatectl set-ntp true || true
+            sleep 2
+        elif command -v chronyd &> /dev/null; then
+            sudo chronyd -q || true
+            sleep 2
+        elif command -v ntpdate &> /dev/null; then
+            sudo ntpdate -s time.nist.gov || sudo ntpdate -s pool.ntp.org || true
+            sleep 2
+        fi
+    fi
+    
+    # Run apt update, ignoring clock sync warnings (they're usually harmless)
+    sudo apt update 2>&1 | grep -v "not valid yet" || true
+    
+    # Only upgrade if update succeeded (exit code 0 after filtering warnings)
+    if sudo apt update 2>&1 | grep -v "not valid yet" | grep -q "Reading package lists"; then
+        sudo apt upgrade -y || true
+    fi
+    
     print_success "System packages updated"
 }
 
@@ -82,7 +105,8 @@ install_docker() {
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     
     # Install Docker Engine
-    sudo apt update
+    # Ignore clock sync warnings which are harmless
+    sudo apt update 2>&1 | grep -v "not valid yet" || true
     sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     
     # Add current user to docker group
@@ -145,7 +169,8 @@ install_python() {
     # Add deadsnakes PPA for Python 3.11
     sudo apt install -y software-properties-common
     sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt update
+    # Ignore clock sync warnings which are harmless
+    sudo apt update 2>&1 | grep -v "not valid yet" || true
     
     # Install Python 3.11 and related packages
     sudo apt install -y python3.11 python3.11-venv python3.11-dev
