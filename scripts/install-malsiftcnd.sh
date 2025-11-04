@@ -113,10 +113,26 @@ check_prerequisites() {
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
             install_prerequisites
             # Re-check after installation - wait a moment for services to settle
-            sleep 2
+            sleep 3
+            print_status "Re-checking Docker Compose availability..."
             if ! detect_docker_compose; then
-                print_error "Docker Compose is still not available. Please install it manually."
-                exit 1
+                print_warning "Docker Compose detection failed. Docker may require logout/login."
+                print_status "Attempting to continue with sudo if needed..."
+                # Try to detect with sudo as fallback
+                if sudo docker compose version >/dev/null 2>&1 || sudo docker-compose --version >/dev/null 2>&1; then
+                    print_warning "Docker works with sudo. Script will use sudo for Docker commands."
+                    if sudo docker compose version >/dev/null 2>&1; then
+                        DOCKER_COMPOSE_CMD="docker compose"
+                        DOCKER_SUDO="sudo"
+                    elif sudo docker-compose --version >/dev/null 2>&1; then
+                        DOCKER_COMPOSE_CMD="docker-compose"
+                        DOCKER_SUDO="sudo"
+                    fi
+                else
+                    print_error "Docker Compose is still not available. Please logout/login and rerun this script."
+                    print_error "Or install Docker Compose manually."
+                    exit 1
+                fi
             fi
         else
             print_error "Please install missing prerequisites and run this script again."
@@ -131,6 +147,8 @@ check_prerequisites() {
             exit 1
         fi
     fi
+    
+    print_success "All prerequisites are available"
 }
 
 # Install prerequisites
