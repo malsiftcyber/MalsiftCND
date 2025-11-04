@@ -95,18 +95,26 @@ class AuthService:
     
     async def _authenticate_local_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
         """Authenticate local user"""
-        # This would typically query the database
-        # For now, we'll use a simple in-memory check
-        # In production, this should query the User model
+        self.logger.info(f"Attempting to authenticate user: {username}")
         
-        # Placeholder - replace with actual database query
         user = await self._get_local_user(username)
         if not user:
+            self.logger.warning(f"User '{username}' not found in database")
             return None
         
-        if not self.verify_password(password, user["hashed_password"]):
+        self.logger.info(f"User '{username}' found, checking password...")
+        
+        # Check if user is active
+        if not user.get("is_active", True):
+            self.logger.warning(f"User '{username}' is not active")
             return None
         
+        password_valid = self.verify_password(password, user["hashed_password"])
+        if not password_valid:
+            self.logger.warning(f"Password verification failed for user '{username}'")
+            return None
+        
+        self.logger.info(f"Authentication successful for user '{username}'")
         return {
             "id": user["id"],
             "username": user["username"],
@@ -227,8 +235,10 @@ class AuthService:
                 user = result.scalar_one_or_none()
                 
                 if not user:
+                    self.logger.debug(f"User '{username}' not found in database")
                     return None
                 
+                self.logger.debug(f"User '{username}' found: active={user.is_active}, admin={user.is_admin}")
                 return {
                     "id": str(user.id),
                     "username": user.username,
@@ -239,7 +249,7 @@ class AuthService:
                     "auth_type": user.auth_type or "local"
                 }
         except Exception as e:
-            self.logger.error(f"Failed to get user from database: {e}")
+            self.logger.error(f"Failed to get user from database: {e}", exc_info=True)
             return None
     
     def generate_mfa_secret(self) -> str:
