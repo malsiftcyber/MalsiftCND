@@ -427,10 +427,14 @@ create_admin_user() {
     print_status "Creating admin user in database..."
     
     # Create Python script to create admin user
-    cat > /tmp/create_admin.py <<'PYTHON_EOF'
+    # Use base64 encoding to safely pass password with special characters
+    ADMIN_PASSWORD_B64=$(echo -n "$ADMIN_PASSWORD" | base64)
+    
+    cat > /tmp/create_admin.py <<PYTHON_EOF
 import asyncio
 import sys
 import uuid
+import base64
 from datetime import datetime
 from sqlalchemy import text
 from app.core.database import async_engine, init_db
@@ -442,7 +446,9 @@ async def create_admin():
     
     username = sys.argv[1]
     email = sys.argv[2]
-    password = sys.argv[3]
+    # Decode password from base64 to handle special characters safely
+    password_b64 = sys.argv[3]
+    password = base64.b64decode(password_b64).decode('utf-8')
     
     # Initialize database if needed
     try:
@@ -510,8 +516,8 @@ PYTHON_EOF
     print_status "Waiting for database to be ready..."
     sleep 5
     
-    # Run the script
-    if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>&1 | tee /tmp/create_admin_output.txt; then
+    # Run the script with base64-encoded password to handle special characters
+    if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD_B64" 2>&1 | tee /tmp/create_admin_output.txt; then
         if grep -q "SUCCESS:" /tmp/create_admin_output.txt; then
             print_success "Admin user created successfully"
         elif grep -q "already exists" /tmp/create_admin_output.txt; then

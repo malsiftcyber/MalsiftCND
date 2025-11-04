@@ -214,9 +214,33 @@ class AuthService:
     
     async def _get_local_user(self, username: str) -> Optional[Dict[str, Any]]:
         """Get local user from database"""
-        # Placeholder - replace with actual database query
-        # This should query the User model
-        return None
+        from sqlalchemy import select
+        from sqlalchemy.ext.asyncio import AsyncSession
+        from app.core.database import AsyncSessionLocal
+        from app.models.user import User
+        
+        try:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    select(User).where(User.username == username).where(User.auth_type == "local")
+                )
+                user = result.scalar_one_or_none()
+                
+                if not user:
+                    return None
+                
+                return {
+                    "id": str(user.id),
+                    "username": user.username,
+                    "email": user.email,
+                    "hashed_password": user.hashed_password,
+                    "is_active": user.is_active,
+                    "is_admin": user.is_admin,
+                    "auth_type": user.auth_type or "local"
+                }
+        except Exception as e:
+            self.logger.error(f"Failed to get user from database: {e}")
+            return None
     
     def generate_mfa_secret(self) -> str:
         """Generate MFA secret for user"""
