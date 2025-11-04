@@ -112,9 +112,16 @@ check_prerequisites() {
         read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
             install_prerequisites
+            local install_exit_code=$?
+            if [ $install_exit_code -ne 0 ]; then
+                print_error "Prerequisites installation failed with exit code $install_exit_code"
+                exit 1
+            fi
+            
             # Re-check after installation - wait a moment for services to settle
+            print_status "Prerequisites installation completed. Re-checking Docker Compose availability..."
             sleep 3
-            print_status "Re-checking Docker Compose availability..."
+            
             if ! detect_docker_compose; then
                 print_warning "Docker Compose detection failed. Docker may require logout/login."
                 print_status "Attempting to continue with sudo if needed..."
@@ -124,15 +131,19 @@ check_prerequisites() {
                     if sudo docker compose version >/dev/null 2>&1; then
                         DOCKER_COMPOSE_CMD="docker compose"
                         DOCKER_SUDO="sudo"
+                        print_success "Using Docker Compose plugin with sudo"
                     elif sudo docker-compose --version >/dev/null 2>&1; then
                         DOCKER_COMPOSE_CMD="docker-compose"
                         DOCKER_SUDO="sudo"
+                        print_success "Using Docker Compose standalone with sudo"
                     fi
                 else
                     print_error "Docker Compose is still not available. Please logout/login and rerun this script."
                     print_error "Or install Docker Compose manually."
                     exit 1
                 fi
+            else
+                print_success "Docker Compose detected successfully"
             fi
         else
             print_error "Please install missing prerequisites and run this script again."
@@ -142,6 +153,7 @@ check_prerequisites() {
     
     # Ensure Docker Compose command is set
     if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        print_status "Ensuring Docker Compose command is set..."
         if ! detect_docker_compose; then
             print_error "Docker Compose detection failed. Cannot proceed."
             exit 1
@@ -158,6 +170,12 @@ install_prerequisites() {
     if [ -f "scripts/install-prerequisites-ubuntu.sh" ]; then
         print_status "Running prerequisites installation script..."
         bash scripts/install-prerequisites-ubuntu.sh
+        local prereq_exit_code=$?
+        
+        if [ $prereq_exit_code -ne 0 ]; then
+            print_error "Prerequisites script exited with code $prereq_exit_code"
+            return $prereq_exit_code
+        fi
         
         # Add user to docker group if not already added
         if ! groups | grep -q docker; then
@@ -183,12 +201,15 @@ EOF
                 print_error "Docker is not working. Please ensure Docker service is running:"
                 echo "  sudo systemctl start docker"
                 echo "  sudo systemctl enable docker"
-                exit 1
+                return 1
             fi
         fi
+        
+        print_success "Prerequisites installation completed"
+        return 0
     else
         print_error "Prerequisites script not found. Please run install-prerequisites-ubuntu.sh first."
-        exit 1
+        return 1
     fi
 }
 
