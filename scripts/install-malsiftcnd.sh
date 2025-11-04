@@ -147,6 +147,13 @@ check_prerequisites() {
                 fi
             else
                 print_success "Docker Compose detected successfully"
+                # Check if Docker actually works without sudo - if not, use sudo
+                if ! docker ps >/dev/null 2>&1; then
+                    if sudo docker ps >/dev/null 2>&1; then
+                        print_warning "Docker requires sudo. Setting DOCKER_SUDO=sudo"
+                        DOCKER_SUDO="sudo"
+                    fi
+                fi
             fi
             echo "[DEBUG] Finished re-checking Docker Compose, continuing..."
         else
