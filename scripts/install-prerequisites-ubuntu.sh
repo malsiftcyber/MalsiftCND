@@ -286,8 +286,9 @@ test_docker() {
     if sudo docker run hello-world >/dev/null 2>&1; then
         print_success "Docker test successful"
     else
-        print_error "Docker test failed"
+        print_warning "Docker test failed (this is non-fatal, Docker may need logout/login)"
     fi
+    return 0  # Always return success to avoid script exit
 }
 
 # Function to test Redis
@@ -296,8 +297,9 @@ test_redis() {
     if redis-cli ping >/dev/null 2>&1; then
         print_success "Redis test successful"
     else
-        print_error "Redis test failed"
+        print_warning "Redis test failed (this is non-fatal, Redis may need to be started)"
     fi
+    return 0  # Always return success to avoid script exit
 }
 
 # Function to create MalsiftCND database
@@ -341,12 +343,12 @@ main() {
     # Setup database
     create_database
     
-    # Verify installations
-    verify_installations
+    # Verify installations (non-fatal)
+    verify_installations || true
     
-    # Test installations
-    test_docker
-    test_redis
+    # Test installations (non-fatal)
+    test_docker || true
+    test_redis || true
     
     echo
     echo "=========================================="
