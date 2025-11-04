@@ -3,8 +3,13 @@
 Test script to verify user authentication
 Run this inside the app container to test authentication
 """
-import asyncio
 import sys
+import os
+
+# Add /app to Python path
+sys.path.insert(0, '/app')
+
+import asyncio
 from app.auth.auth_service import AuthService
 from app.core.database import AsyncSessionLocal, async_engine
 from sqlalchemy import select, text
