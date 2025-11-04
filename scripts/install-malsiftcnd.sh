@@ -456,19 +456,22 @@ create_admin_user() {
             continue
         fi
         
-        # Check if app can connect to database
-        if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python -c "
+        # Check if health endpoint responds
+        if curl -sf http://localhost:8000/health >/dev/null 2>&1; then
+            # Additional check: verify database connectivity
+            if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python -c "
 import sys
 sys.path.insert(0, '/app')
 import asyncio
+from sqlalchemy import text
 from app.core.database import async_engine
 
 async def test():
     try:
         async with async_engine.begin() as conn:
-            await conn.execute('SELECT 1')
+            await conn.execute(text('SELECT 1'))
         return True
-    except:
+    except Exception as e:
         return False
 
 if asyncio.run(test()):
@@ -476,8 +479,9 @@ if asyncio.run(test()):
 else:
     sys.exit(1)
 " >/dev/null 2>&1; then
-            app_ready=true
-            break
+                app_ready=true
+                break
+            fi
         fi
         
         attempt=$((attempt + 1))
@@ -490,8 +494,10 @@ else:
         print_error "Application did not become ready in time"
         print_status "Checking container status..."
         $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps
+        print_status "Checking health endpoint..."
+        curl -v http://localhost:8000/health || true
         print_status "Checking app logs..."
-        $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app | tail -20
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app | tail -30
         print_error "You can create the admin user manually later using:"
         echo "  sudo docker compose exec app python /app/scripts/create_admin.py $ADMIN_USERNAME $ADMIN_EMAIL <password>"
         return 1
