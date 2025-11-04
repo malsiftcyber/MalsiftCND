@@ -437,24 +437,6 @@ PYTHON_EOF
         fi
     fi
     
-    # Copy script to container and run it
-    $DOCKER_COMPOSE_CMD cp /tmp/create_admin.py app:/tmp/create_admin.py
-    
-    # Wait for database to be fully ready
-    print_status "Waiting for database to be ready..."
-    sleep 5
-    
-    # Run the script
-    if $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>&1 | tee /tmp/create_admin_output.txt; then
-        if grep -q "SUCCESS:" /tmp/create_admin_output.txt; then
-            print_success "Admin user created successfully"
-        elif grep -q "already exists" /tmp/create_admin_output.txt; then
-            print_warning "Admin user already exists. Skipping creation."
-        else
-            print_warning "Admin user creation had issues. Check output above."
-            print_status "You can manually create the admin user later using the API or database."
-        fi
-    else
     # Ensure we have docker compose command
     if [ -z "$DOCKER_COMPOSE_CMD" ]; then
         if ! detect_docker_compose; then
@@ -472,6 +454,17 @@ PYTHON_EOF
     
     # Run the script
     if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>&1 | tee /tmp/create_admin_output.txt; then
+        if grep -q "SUCCESS:" /tmp/create_admin_output.txt; then
+            print_success "Admin user created successfully"
+        elif grep -q "already exists" /tmp/create_admin_output.txt; then
+            print_warning "Admin user already exists. Skipping creation."
+        else
+            print_warning "Admin user creation had issues. Check output above."
+            print_status "You can manually create the admin user later using the API or database."
+        fi
+    else
+        print_error "Failed to create admin user. You can create it manually:"
+        echo "  1. Wait for app to fully start: $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app"
         echo "  2. Use API: curl -X POST http://localhost:8000/api/v1/auth/register ..."
         echo "  3. Or use database directly"
     fi
