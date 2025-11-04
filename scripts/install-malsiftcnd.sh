@@ -642,7 +642,9 @@ main() {
     
     # Initialize database and create admin user
     print_status "Initializing database (this happens automatically on first start)..."
-    sleep 5
+    
+    # Wait a bit for app to fully initialize (tables creation, etc.)
+    sleep 10
     
     create_admin_user
     
