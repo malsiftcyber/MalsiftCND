@@ -7,21 +7,6 @@ echo "=========================================="
 echo ""
 
 # Check if containers are running
-if ! docker compose ps | grep -q "app.*Up"; then
-    echo "ERROR: App container is not running"
-    echo "Please start containers with: sudo docker compose up -d"
-    exit 1
-fi
-
-#!/bin/bash
-# Debug authentication issues
-
-echo "=========================================="
-echo "MalsiftCND Authentication Debug Script"
-echo "=========================================="
-echo ""
-
-# Check if containers are running
 if ! sudo docker compose ps | grep -q "app.*Up"; then
     echo "ERROR: App container is not running"
     echo "Please start containers with: sudo docker compose up -d"
@@ -65,5 +50,3 @@ echo ""
 echo "   Or to list all users:"
 echo "   sudo docker compose exec app python /app/scripts/test_auth.py --list-users"
 echo ""
-
-
