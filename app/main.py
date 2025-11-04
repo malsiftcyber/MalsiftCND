@@ -63,6 +63,24 @@ app.add_middleware(RateLimitMiddleware)
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
+# Health check endpoint (must be before frontend mount)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "version": settings.VERSION}
+
+
+@app.get("/api/status")
+async def status():
+    """Detailed status endpoint"""
+    return {
+        "status": "operational",
+        "version": settings.VERSION,
+        "database": "connected",
+        "redis": "connected",
+        "scanners": "active"
+    }
+
 # Serve static files (if directory exists)
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -108,24 +126,6 @@ else:
                 "/api/v1/admin"
             ]
         }
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "version": settings.VERSION}
-
-
-@app.get("/api/status")
-async def status():
-    """Detailed status endpoint"""
-    return {
-        "status": "operational",
-        "version": settings.VERSION,
-        "database": "connected",
-        "redis": "connected",
-        "scanners": "active"
-    }
 
 
 if __name__ == "__main__":
