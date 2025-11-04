@@ -2,10 +2,25 @@
 
 Get up and running with MalsiftCND in minutes!
 
+## Installation
+
+**Quick Installation** (Recommended):
+
+```bash
+# Clone the repository
+git clone https://github.com/malsiftcyber/MalsiftCND.git
+cd MalsiftCND
+
+# Run the unified installation script
+./scripts/install-malsiftcnd.sh
+```
+
+This script automatically installs prerequisites, configures the system, and creates your admin user. For detailed installation instructions, see the [Installation Guide](installation.md).
+
 ## Prerequisites
 
 - MalsiftCND installed and running
-- Admin user account created
+- Admin user account created (done automatically with unified install script)
 - Network access to scan targets
 
 ## Step 1: Access the Web Interface

@@ -27,13 +27,36 @@ MalsiftCND is an advanced network discovery and attack surface management platfo
 
 ## Quick Start
 
-### Ubuntu 24.04 LTS Installation
+### Unified Installation (Recommended)
 
-**Prerequisites Installation**:
+**One-Command Installation** - The easiest way to install MalsiftCND:
 
-**Option 1: Direct Download (Recommended)**:
 ```bash
-# Download and run the installation script
+# Clone the repository
+git clone https://github.com/malsiftcyber/MalsiftCND.git
+cd MalsiftCND
+
+# Run the unified installation script
+./scripts/install-malsiftcnd.sh
+```
+
+This script automatically:
+- ✅ Checks and installs prerequisites (Docker, Docker Compose)
+- ✅ Generates secure secret keys
+- ✅ Creates configuration files
+- ✅ Prompts for admin user credentials
+- ✅ Builds and starts Docker containers
+- ✅ Creates the admin user automatically
+
+**After installation**, access the web interface at `http://localhost:8000` and login with your admin credentials.
+
+### Alternative Installation Methods
+
+**Prerequisites Only** (if you prefer step-by-step):
+
+**Option 1: Direct Download**:
+```bash
+# Download and run the prerequisites installation script
 wget https://raw.githubusercontent.com/malsiftcyber/MalsiftCND/main/scripts/install-prerequisites-ubuntu.sh
 chmod +x install-prerequisites-ubuntu.sh
 ./install-prerequisites-ubuntu.sh
@@ -45,7 +68,7 @@ chmod +x install-prerequisites-ubuntu.sh
 git clone https://github.com/malsiftcyber/MalsiftCND.git
 cd MalsiftCND
 
-# Run the installation script
+# Run the prerequisites installation script
 ./scripts/install-prerequisites-ubuntu.sh
 ```
 
@@ -57,22 +80,8 @@ chmod +x install-prerequisites-ubuntu-simple.sh
 ./install-prerequisites-ubuntu-simple.sh
 ```
 
-**Option 4: Manual Installation**:
+**Manual Installation**:
 Follow the detailed instructions in the [Installation Guide](docs/installation.md)
-
-**MalsiftCND Installation**:
-```bash
-# Clone repository
-git clone https://github.com/malsiftcyber/MalsiftCND.git
-cd MalsiftCND
-
-# Configure environment
-cp env.example .env
-nano .env  # Edit configuration
-
-# Start with Docker
-docker compose up -d
-```
 
 ### Other Platforms
 
