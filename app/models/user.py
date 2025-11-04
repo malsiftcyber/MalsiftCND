@@ -37,10 +37,17 @@ class User(Base):
     # Authentication type
     auth_type = Column(String(20), default="local", nullable=False)  # local, ad, azure
     
-    # Relationships
-    corrections_made = relationship("DeviceCorrection", foreign_keys="DeviceCorrection.user_id", back_populates="user")
-    corrections_verified = relationship("DeviceCorrection", foreign_keys="DeviceCorrection.verified_by", back_populates="verifier")
-    device_feedback = relationship("DeviceFeedback", back_populates="user")
+    # Relationships - using string references to avoid circular imports
+    corrections_made = relationship(
+        "DeviceCorrection",
+        foreign_keys="DeviceCorrection.user_id",
+        back_populates="user"
+    )
+    corrections_verified = relationship(
+        "DeviceCorrection",
+        foreign_keys="DeviceCorrection.verified_by",
+        back_populates="verifier"
+    )
     company = relationship("Company", back_populates="users")
     
     def __repr__(self):

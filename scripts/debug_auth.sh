@@ -16,14 +16,18 @@ fi
 echo "1. Checking users in database..."
 docker compose exec -T app python -c "
 import asyncio
-from sqlalchemy import select
-from app.core.database import AsyncSessionLocal
-from app.models.user import User
+from sqlalchemy import select, text
+from app.core.database import AsyncSessionLocal, async_engine
 
 async def list_users():
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(User))
-        users = result.scalars().all()
+    # Use raw SQL to avoid relationship loading issues
+    async with async_engine.begin() as conn:
+        result = await conn.execute(text('''
+            SELECT id, username, email, is_active, is_admin, auth_type,
+                   LEFT(hashed_password, 30) as password_preview
+            FROM users
+        '''))
+        users = result.fetchall()
         print(f'Found {len(users)} users:')
         for user in users:
             print(f'  - Username: {user.username}')
@@ -31,7 +35,7 @@ async def list_users():
             print(f'    Admin: {user.is_admin}')
             print(f'    Active: {user.is_active}')
             print(f'    Auth Type: {user.auth_type}')
-            print(f'    Password Hash (first 30 chars): {user.hashed_password[:30]}...')
+            print(f'    Password Hash (first 30 chars): {user.password_preview}...')
             print()
 
 asyncio.run(list_users())
@@ -44,4 +48,5 @@ echo ""
 echo "   Or to list all users:"
 echo "   docker compose exec app python /app/scripts/test_auth.py --list-users"
 echo ""
+
 
