@@ -169,13 +169,17 @@ install_prerequisites() {
     
     if [ -f "scripts/install-prerequisites-ubuntu.sh" ]; then
         print_status "Running prerequisites installation script..."
-        bash scripts/install-prerequisites-ubuntu.sh
-        local prereq_exit_code=$?
         
-        if [ $prereq_exit_code -ne 0 ]; then
+        # Run the script and capture output
+        if bash scripts/install-prerequisites-ubuntu.sh; then
+            local prereq_exit_code=0
+        else
+            local prereq_exit_code=$?
             print_error "Prerequisites script exited with code $prereq_exit_code"
             return $prereq_exit_code
         fi
+        
+        print_status "Prerequisites script finished. Continuing with post-installation steps..."
         
         # Add user to docker group if not already added
         if ! groups | grep -q docker; then
