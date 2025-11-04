@@ -402,8 +402,11 @@ start_containers() {
     # Wait for app to be ready
     print_status "Waiting for application to start..."
     attempt=0
+    local app_health_ok=false
     while [ $attempt -lt $max_attempts ]; do
+        # Check both container health and HTTP endpoint
         if curl -sf http://localhost:8000/health >/dev/null 2>&1; then
+            app_health_ok=true
             print_success "Application is ready"
             break
         fi
@@ -413,10 +416,11 @@ start_containers() {
     done
     echo ""
     
-    if [ $attempt -eq $max_attempts ]; then
+    if [ "$app_health_ok" != "true" ]; then
         print_warning "Application may not be fully ready. Check logs with: $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app"
         print_status "Checking container status..."
         $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps
+        print_status "The application may still be starting. Admin user creation will retry..."
     fi
 }
 
@@ -424,15 +428,91 @@ start_containers() {
 create_admin_user() {
     print_header "Creating Admin User"
     
-    print_status "Creating admin user in database..."
+    if [ -z "$ADMIN_USERNAME" ] || [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
+        print_error "Admin user credentials not set. Cannot create admin user."
+        return 1
+    fi
     
-    # Create Python script to create admin user
+    # Ensure we have docker compose command
+    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        if ! detect_docker_compose; then
+            print_error "Docker Compose is not available. Cannot create admin user."
+            return 1
+        fi
+    fi
+    
+    # Wait for app container to be ready and database initialized
+    print_status "Waiting for application to be ready..."
+    local max_attempts=60
+    local attempt=0
+    local app_ready=false
+    
+    while [ $attempt -lt $max_attempts ]; do
+        # Check if app container is running
+        if ! $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps app | grep -q "Up"; then
+            attempt=$((attempt + 1))
+            echo -n "."
+            sleep 2
+            continue
+        fi
+        
+        # Check if app can connect to database
+        if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python -c "
+import sys
+sys.path.insert(0, '/app')
+import asyncio
+from app.core.database import async_engine
+
+async def test():
+    try:
+        async with async_engine.begin() as conn:
+            await conn.execute('SELECT 1')
+        return True
+    except:
+        return False
+
+if asyncio.run(test()):
+    sys.exit(0)
+else:
+    sys.exit(1)
+" >/dev/null 2>&1; then
+            app_ready=true
+            break
+        fi
+        
+        attempt=$((attempt + 1))
+        echo -n "."
+        sleep 2
+    done
+    echo ""
+    
+    if [ "$app_ready" != "true" ]; then
+        print_error "Application did not become ready in time"
+        print_status "Checking container status..."
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD ps
+        print_status "Checking app logs..."
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app | tail -20
+        print_error "You can create the admin user manually later using:"
+        echo "  sudo docker compose exec app python /app/scripts/create_admin.py $ADMIN_USERNAME $ADMIN_EMAIL <password>"
+        return 1
+    fi
+    
+    print_success "Application is ready"
+    
     # Use base64 encoding to safely pass password with special characters
     ADMIN_PASSWORD_B64=$(echo -n "$ADMIN_PASSWORD" | base64)
     
-    cat > /tmp/create_admin.py <<PYTHON_EOF
-import asyncio
+    # Copy the standalone create_admin script to container (use the one from repo)
+    print_status "Setting up admin user creation script..."
+    if [ -f "scripts/create_admin.py" ]; then
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD cp scripts/create_admin.py app:/app/scripts/create_admin.py
+    else
+        # Fallback: create inline script
+        print_warning "create_admin.py not found in repo, creating inline version..."
+        cat > /tmp/create_admin.py <<'PYTHON_EOF'
 import sys
+sys.path.insert(0, '/app')
+import asyncio
 import uuid
 import base64
 from datetime import datetime
@@ -441,41 +521,40 @@ from app.core.database import async_engine, init_db
 from app.auth.auth_service import AuthService
 
 async def create_admin():
-    # Import models to ensure tables exist
-    from app.models import user, device, scan, integration, device_correction, tagging, edr_integration, discovery_agent, accuracy_ranking
-    
     username = sys.argv[1]
     email = sys.argv[2]
-    # Decode password from base64 to handle special characters safely
-    password_b64 = sys.argv[3]
-    password = base64.b64decode(password_b64).decode('utf-8')
+    use_base64 = len(sys.argv) > 4 and sys.argv[4] == "--base64"
     
-    # Initialize database if needed
+    if use_base64:
+        password_b64 = sys.argv[3]
+        password = base64.b64decode(password_b64).decode('utf-8')
+    else:
+        password = sys.argv[3]
+    
     try:
         await init_db()
     except Exception as e:
-        print(f"Database already initialized or error: {e}")
+        pass  # Database may already be initialized
     
     auth_service = AuthService()
     hashed_password = auth_service.get_password_hash(password)
     user_id = str(uuid.uuid4())
     
     async with async_engine.begin() as conn:
-        # Check if user already exists
-        try:
-            result = await conn.execute(
-                text("SELECT id FROM users WHERE username = :username OR email = :email"),
-                {"username": username, "email": email}
-            )
-            if result.fetchone():
-                print(f"User {username} or {email} already exists")
-                return
-        except Exception as e:
-            print(f"Error checking user existence: {e}")
-            # Table might not exist yet, continue to create
+        result = await conn.execute(
+            text("SELECT id FROM users WHERE username = :username OR email = :email"),
+            {"username": username, "email": email}
+        )
+        existing = result.fetchone()
         
-        # Insert admin user
-        try:
+        if existing:
+            print(f"User {username} already exists - updating password")
+            await conn.execute(
+                text("UPDATE users SET hashed_password = :password, is_active = true, is_admin = true, auth_type = 'local' WHERE username = :username"),
+                {"username": username, "password": hashed_password}
+            )
+            print(f"SUCCESS: Password updated for user '{username}'")
+        else:
             await conn.execute(
                 text("""
                     INSERT INTO users (id, username, email, hashed_password, is_active, is_admin, created_at, auth_type)
@@ -493,48 +572,64 @@ async def create_admin():
                 }
             )
             print(f"SUCCESS: Admin user '{username}' created successfully")
-        except Exception as e:
-            print(f"ERROR: Failed to create admin user: {e}")
-            sys.exit(1)
 
-if __name__ == "__main__":
-    asyncio.run(create_admin())
+asyncio.run(create_admin())
 PYTHON_EOF
-
-    # Ensure we have docker compose command
-    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
-        if ! detect_docker_compose; then
-            print_error "Docker Compose is not available. Cannot create admin user."
-            return 1
-        fi
+        $DOCKER_SUDO $DOCKER_COMPOSE_CMD cp /tmp/create_admin.py app:/app/scripts/create_admin.py
     fi
     
-    # Copy script to container and run it
-    $DOCKER_SUDO $DOCKER_COMPOSE_CMD cp /tmp/create_admin.py app:/tmp/create_admin.py
+    # Wait a moment for script to be available
+    sleep 2
     
-    # Wait for database to be fully ready
-    print_status "Waiting for database to be ready..."
-    sleep 5
-    
-    # Run the script with base64-encoded password to handle special characters
-    if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python /tmp/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD_B64" 2>&1 | tee /tmp/create_admin_output.txt; then
+    # Run the script
+    print_status "Creating admin user..."
+    if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python /app/scripts/create_admin.py "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD_B64" --base64 2>&1 | tee /tmp/create_admin_output.txt; then
         if grep -q "SUCCESS:" /tmp/create_admin_output.txt; then
             print_success "Admin user created successfully"
+            
+            # Verify the user was created
+            print_status "Verifying user creation..."
+            if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python -c "
+import sys
+sys.path.insert(0, '/app')
+import asyncio
+from sqlalchemy import text
+from app.core.database import async_engine
+
+async def verify():
+    async with async_engine.begin() as conn:
+        result = await conn.execute(text('SELECT username, email, is_active, is_admin, auth_type FROM users WHERE username = :username'), {'username': '$ADMIN_USERNAME'})
+        user = result.fetchone()
+        if user:
+            print(f'✓ Verified: {user.username} ({user.email})')
+            print(f'  Active: {user.is_active}, Admin: {user.is_admin}, Auth Type: {user.auth_type}')
+            sys.exit(0)
+        else:
+            print('✗ ERROR: User not found after creation')
+            sys.exit(1)
+
+asyncio.run(verify())
+" 2>&1; then
+                print_success "User verification successful"
+            else
+                print_warning "Could not verify user creation, but script reported success"
+            fi
         elif grep -q "already exists" /tmp/create_admin_output.txt; then
-            print_warning "Admin user already exists. Skipping creation."
+            print_warning "Admin user already exists. Password updated."
         else
-            print_warning "Admin user creation had issues. Check output above."
-            print_status "You can manually create the admin user later using the API or database."
+            print_error "Admin user creation failed. Output:"
+            cat /tmp/create_admin_output.txt
+            print_status "You can manually create the admin user later using:"
+            echo "  sudo docker compose exec app python /app/scripts/create_admin.py $ADMIN_USERNAME $ADMIN_EMAIL <password>"
         fi
     else
-        print_error "Failed to create admin user. You can create it manually:"
-        echo "  1. Wait for app to fully start: $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app"
-        echo "  2. Use API: curl -X POST http://localhost:8000/api/v1/auth/register ..."
-        echo "  3. Or use database directly"
+        print_error "Failed to execute admin user creation script"
+        print_status "You can manually create the admin user later using:"
+        echo "  sudo docker compose exec app python /app/scripts/create_admin.py $ADMIN_USERNAME $ADMIN_EMAIL <password>"
     fi
     
     # Cleanup
-    rm -f /tmp/create_admin.py /tmp/create_admin_output.txt
+    rm -f /tmp/create_admin.py /tmp/create_admin_output.txt 2>/dev/null || true
 }
 
 # Main installation function
