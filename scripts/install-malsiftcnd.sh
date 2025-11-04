@@ -197,9 +197,19 @@ install_prerequisites() {
         if ! groups | grep -q docker; then
             print_status "Adding user to docker group..."
             sudo usermod -aG docker $USER
-            print_warning "User added to docker group. You may need to logout/login for it to take effect."
-            print_status "Note: Docker commands will use sudo until you logout/login"
-            # Don't use newgrp here as it creates a subshell
+            print_warning "User added to docker group."
+            print_status "Note: Group membership takes effect after logout/login."
+            print_status "For this installation, Docker commands will use sudo temporarily."
+            print_status "After logout/login, Docker will work without sudo (as intended)."
+            # Don't use newgrp here as it creates a subshell that exits immediately
+        else
+            # User is already in docker group, but may need logout/login
+            print_status "User is already in docker group."
+            if ! docker ps >/dev/null 2>&1; then
+                print_warning "Docker group membership not active in current session."
+                print_status "This is normal - group changes require logout/login."
+                print_status "Using sudo temporarily for this installation."
+            fi
         fi
         echo "[DEBUG] Post-installation step 2: Waiting for Docker..."
         
@@ -563,6 +573,16 @@ main() {
     echo "  - Username: $ADMIN_USERNAME"
     echo "  - Email: $ADMIN_EMAIL"
     echo ""
+    if [ "$DOCKER_SUDO" = "sudo" ]; then
+        echo "⚠️  Docker Group Membership:"
+        echo "  Your user has been added to the docker group."
+        echo "  To use Docker without sudo (recommended), please:"
+        echo "    1. Logout and login again, OR"
+        echo "    2. Run: newgrp docker"
+        echo ""
+        echo "  After logout/login, you can use 'docker compose' instead of 'sudo docker compose'"
+        echo ""
+    fi
     echo "Useful Commands:"
     echo "  - View logs: $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs -f app"
     echo "  - Stop services: $DOCKER_SUDO $DOCKER_COMPOSE_CMD down"
