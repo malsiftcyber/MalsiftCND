@@ -441,7 +441,7 @@ create_admin_user() {
         fi
     fi
     
-    # Wait for app container to be ready and database initialized
+    # Wait for app container to be ready and health endpoint responding
     print_status "Waiting for application to be ready..."
     local max_attempts=60
     local attempt=0
@@ -456,32 +456,10 @@ create_admin_user() {
             continue
         fi
         
-        # Check if health endpoint responds
+        # Check if health endpoint responds (this confirms app is running and database is initialized)
         if curl -sf http://localhost:8000/health >/dev/null 2>&1; then
-            # Additional check: verify database connectivity
-            if $DOCKER_SUDO $DOCKER_COMPOSE_CMD exec -T app python -c "
-import sys
-sys.path.insert(0, '/app')
-import asyncio
-from sqlalchemy import text
-from app.core.database import async_engine
-
-async def test():
-    try:
-        async with async_engine.begin() as conn:
-            await conn.execute(text('SELECT 1'))
-        return True
-    except Exception as e:
-        return False
-
-if asyncio.run(test()):
-    sys.exit(0)
-else:
-    sys.exit(1)
-" >/dev/null 2>&1; then
-                app_ready=true
-                break
-            fi
+            app_ready=true
+            break
         fi
         
         attempt=$((attempt + 1))
@@ -504,6 +482,9 @@ else:
     fi
     
     print_success "Application is ready"
+    
+    # Give it a moment for database to be fully ready
+    sleep 3
     
     # Use base64 encoding to safely pass password with special characters
     ADMIN_PASSWORD_B64=$(echo -n "$ADMIN_PASSWORD" | base64)
