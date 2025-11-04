@@ -25,7 +25,10 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/data /app/logs /app/certs
+RUN mkdir -p /app/data /app/logs /app/certs /app/static
+
+# Copy static files if they exist
+COPY static/ /app/static/ 2>/dev/null || true
 
 # Set permissions
 RUN chmod +x /app/scripts/*.sh
