@@ -1,0 +1,116 @@
+.dashboard h1,
+.scans-page h1,
+.devices-page h1,
+.integrations-page h1,
+.edr-page h1,
+.scheduling-page h1,
+.tagging-page h1,
+.exports-page h1,
+.agents-page h1,
+.accuracy-page h1,
+.admin-page h1 {
+  margin-bottom: 2rem;
+  color: var(--text);
+}
+
+.integrations-grid,
+.tagging-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.integration-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.integration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.integration-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-enabled {
+  background: #28a74520;
+  color: #28a745;
+}
+
+.status-disabled {
+  background: #6c757d20;
+  color: #6c757d;
+}
+
+.export-card {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  max-width: 600px;
+}
+
+.admin-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.admin-section {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.scanners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.scanner-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--light);
+  border-radius: 6px;
+}
+
+.scanner-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tagging-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.tagging-section h2 {
+  margin-bottom: 1rem;
+}
+
