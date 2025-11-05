@@ -86,47 +86,9 @@ if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Serve frontend (if directory exists)
+# Use StaticFiles with html=True for automatic SPA routing support
 if os.path.exists("frontend/dist"):
-    # Serve static assets (JS, CSS, images) from the dist folder
-    # Check if assets directory exists before mounting
-    assets_path = os.path.join("frontend/dist", "assets")
-    if os.path.exists(assets_path):
-        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
-    
-    # Serve index.html for root
-    @app.get("/", response_class=HTMLResponse)
-    async def serve_root():
-        """Serve React app root"""
-        index_path = os.path.join("frontend/dist", "index.html")
-        if os.path.exists(index_path):
-            with open(index_path, "r") as f:
-                return HTMLResponse(content=f.read())
-        return HTMLResponse(content="<h1>Frontend not found</h1>", status_code=404)
-    
-    # Serve index.html for all non-API routes (SPA routing)
-    # This must be last to catch all routes not matched above
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        """Serve React app for all non-API routes"""
-        # Skip API routes, health check, and assets - these are handled above
-        # FastAPI will match more specific routes first, so API routes won't reach here
-        if full_path.startswith("api") or full_path == "health" or full_path.startswith("assets"):
-            # This shouldn't happen, but just in case
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Not found")
-        
-        # Try to serve the file if it exists (for favicon, etc.)
-        file_path = os.path.join("frontend/dist", full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        
-        # Otherwise serve index.html for React Router
-        index_path = os.path.join("frontend/dist", "index.html")
-        if os.path.exists(index_path):
-            with open(index_path, "r") as f:
-                return HTMLResponse(content=f.read())
-        
-        return HTMLResponse(content="<h1>Frontend not found</h1>", status_code=404)
+    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
