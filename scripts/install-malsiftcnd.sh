@@ -511,7 +511,7 @@ sys.path.insert(0, '/app')
 import asyncio
 import uuid
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import text
 from app.core.database import async_engine, init_db
 from app.auth.auth_service import AuthService
@@ -534,7 +534,7 @@ async def create_admin():
     
     auth_service = AuthService()
     hashed_password = auth_service.get_password_hash(password)
-    user_id = str(uuid.uuid4())
+    user_id = uuid.uuid4()
     
     async with async_engine.begin() as conn:
         result = await conn.execute(
@@ -553,8 +553,8 @@ async def create_admin():
         else:
             await conn.execute(
                 text("""
-                    INSERT INTO users (id, username, email, hashed_password, is_active, is_admin, created_at, auth_type)
-                    VALUES (:id, :username, :email, :password, :is_active, :is_admin, :created_at, :auth_type)
+                    INSERT INTO users (id, username, email, hashed_password, is_active, is_admin, mfa_enabled, created_at, auth_type)
+                    VALUES (:id, :username, :email, :password, :is_active, :is_admin, :mfa_enabled, :created_at, :auth_type)
                 """),
                 {
                     "id": user_id,
@@ -563,7 +563,8 @@ async def create_admin():
                     "password": hashed_password,
                     "is_active": True,
                     "is_admin": True,
-                    "created_at": datetime.now(),
+                    "mfa_enabled": False,
+                    "created_at": datetime.now(timezone.utc),
                     "auth_type": "local"
                 }
             )
