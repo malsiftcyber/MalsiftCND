@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { Plus, Play, Trash2 } from 'lucide-react'
 import './Scans.css'
+import './shared.css'
 
 const Scans: React.FC = () => {
   const navigate = useNavigate()
@@ -17,12 +18,18 @@ const Scans: React.FC = () => {
     timeout: 300,
   })
 
-  const { data: scans = [] } = useQuery({
+  const { data: scans = [], isLoading, error } = useQuery({
     queryKey: ['scans'],
     queryFn: async () => {
-      const res = await api.get('/scans/')
-      return res.data
+      try {
+        const res = await api.get('/scans/')
+        return res.data || []
+      } catch (error: any) {
+        console.error('Failed to load scans:', error)
+        return []
+      }
     },
+    retry: 1,
   })
 
   const createScan = useMutation({
@@ -41,6 +48,10 @@ const Scans: React.FC = () => {
       setShowCreateModal(false)
       setFormData({ targets: '', scan_type: 'port_scan', scanner: 'nmap', ports: '', timeout: 300 })
     },
+    onError: (error: any) => {
+      console.error('Failed to create scan:', error)
+      alert(`Failed to create scan: ${error.response?.data?.detail || error.message}`)
+    },
   })
 
   const cancelScan = useMutation({
@@ -50,11 +61,26 @@ const Scans: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scans'] })
     },
+    onError: (error: any) => {
+      console.error('Failed to cancel scan:', error)
+      alert(`Failed to cancel scan: ${error.response?.data?.detail || error.message}`)
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     createScan.mutate(formData)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="scans-page">
+        <div className="page-header">
+          <h1>Network Scans</h1>
+        </div>
+        <div className="loading">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -66,6 +92,12 @@ const Scans: React.FC = () => {
           New Scan
         </button>
       </div>
+
+      {error && (
+        <div className="error-message">
+          Failed to load scans: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
@@ -127,8 +159,8 @@ const Scans: React.FC = () => {
                 <button type="button" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Start Scan
+                <button type="submit" className="btn-primary" disabled={createScan.isPending}>
+                  {createScan.isPending ? 'Creating...' : 'Start Scan'}
                 </button>
               </div>
             </form>
@@ -136,60 +168,64 @@ const Scans: React.FC = () => {
         </div>
       )}
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Scan ID</th>
-              <th>Targets</th>
-              <th>Type</th>
-              <th>Scanner</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {scans.map((scan: any) => (
-              <tr key={scan.scan_id}>
-                <td>
-                  <button
-                    className="link-button"
-                    onClick={() => navigate(`/scans/${scan.scan_id}`)}
-                  >
-                    {scan.scan_id.substring(0, 8)}...
-                  </button>
-                </td>
-                <td>{scan.targets?.length || 0} targets</td>
-                <td>{scan.scan_type}</td>
-                <td>{scan.scanner}</td>
-                <td>
-                  <span className={`status-badge status-${scan.status}`}>
-                    {scan.status}
-                  </span>
-                </td>
-                <td>{new Date(scan.created_at).toLocaleString()}</td>
-                <td>
-                  <div className="action-buttons">
-                    {scan.status === 'running' && (
-                      <button
-                        onClick={() => cancelScan.mutate(scan.scan_id)}
-                        className="btn-icon"
-                        title="Cancel"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </td>
+      {scans.length === 0 ? (
+        <div className="empty-state">No scans found. Create your first scan to get started.</div>
+      ) : (
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Scan ID</th>
+                <th>Targets</th>
+                <th>Type</th>
+                <th>Scanner</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {scans.map((scan: any) => (
+                <tr key={scan.scan_id}>
+                  <td>
+                    <button
+                      className="link-button"
+                      onClick={() => navigate(`/scans/${scan.scan_id}`)}
+                    >
+                      {scan.scan_id?.substring(0, 8) || 'N/A'}...
+                    </button>
+                  </td>
+                  <td>{scan.targets?.length || 0} targets</td>
+                  <td>{scan.scan_type || 'N/A'}</td>
+                  <td>{scan.scanner || 'N/A'}</td>
+                  <td>
+                    <span className={`status-badge status-${scan.status || 'unknown'}`}>
+                      {scan.status || 'unknown'}
+                    </span>
+                  </td>
+                  <td>{scan.created_at ? new Date(scan.created_at).toLocaleString() : 'N/A'}</td>
+                  <td>
+                    <div className="action-buttons">
+                      {scan.status === 'running' && (
+                        <button
+                          onClick={() => cancelScan.mutate(scan.scan_id)}
+                          className="btn-icon"
+                          title="Cancel"
+                          disabled={cancelScan.isPending}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
 export default Scans
-

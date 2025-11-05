@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import { Plus, Trash2 } from 'lucide-react'
 import './Scheduling.css'
+import './shared.css'
 
 const Scheduling: React.FC = () => {
   const queryClient = useQueryClient()
@@ -16,12 +17,18 @@ const Scheduling: React.FC = () => {
     enabled: true,
   })
 
-  const { data: schedules = [] } = useQuery({
+  const { data: schedules = [], isLoading, error } = useQuery({
     queryKey: ['schedules'],
     queryFn: async () => {
-      const res = await api.get('/scheduling/')
-      return res.data
+      try {
+        const res = await api.get('/scheduling/')
+        return res.data || []
+      } catch (error: any) {
+        console.error('Failed to load schedules:', error)
+        return []
+      }
     },
+    retry: 1,
   })
 
   const createSchedule = useMutation({
@@ -39,6 +46,11 @@ const Scheduling: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
       setShowCreateModal(false)
+      setFormData({ name: '', targets: '', scan_type: 'port_scan', scanner: 'nmap', frequency: 'daily', enabled: true })
+    },
+    onError: (error: any) => {
+      console.error('Failed to create schedule:', error)
+      alert(`Failed to create schedule: ${error.response?.data?.detail || error.message}`)
     },
   })
 
@@ -49,11 +61,26 @@ const Scheduling: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
     },
+    onError: (error: any) => {
+      console.error('Failed to delete schedule:', error)
+      alert(`Failed to delete schedule: ${error.response?.data?.detail || error.message}`)
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     createSchedule.mutate(formData)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="scheduling-page">
+        <div className="page-header">
+          <h1>Scan Scheduling</h1>
+        </div>
+        <div className="loading">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -65,6 +92,12 @@ const Scheduling: React.FC = () => {
           New Schedule
         </button>
       </div>
+
+      {error && (
+        <div className="error-message">
+          Failed to load schedules: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
@@ -117,8 +150,8 @@ const Scheduling: React.FC = () => {
                 <button type="button" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Create Schedule
+                <button type="submit" className="btn-primary" disabled={createSchedule.isPending}>
+                  {createSchedule.isPending ? 'Creating...' : 'Create Schedule'}
                 </button>
               </div>
             </form>
@@ -126,45 +159,50 @@ const Scheduling: React.FC = () => {
         </div>
       )}
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Targets</th>
-              <th>Type</th>
-              <th>Frequency</th>
-              <th>Status</th>
-              <th>Next Run</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedules.map((schedule: any) => (
-              <tr key={schedule.id}>
-                <td>{schedule.name}</td>
-                <td>{schedule.targets?.length || 0} targets</td>
-                <td>{schedule.scan_type}</td>
-                <td>{schedule.frequency}</td>
-                <td>
-                  <span className={`status-badge status-${schedule.enabled ? 'enabled' : 'disabled'}`}>
-                    {schedule.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </td>
-                <td>{schedule.next_run ? new Date(schedule.next_run).toLocaleString() : 'N/A'}</td>
-                <td>
-                  <button
-                    className="btn-icon"
-                    onClick={() => deleteSchedule.mutate(schedule.id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
+      {schedules.length === 0 ? (
+        <div className="empty-state">No scheduled scans configured. Create a schedule to get started.</div>
+      ) : (
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Targets</th>
+                <th>Type</th>
+                <th>Frequency</th>
+                <th>Status</th>
+                <th>Next Run</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {schedules.map((schedule: any) => (
+                <tr key={schedule.id}>
+                  <td>{schedule.name || 'Unnamed'}</td>
+                  <td>{schedule.targets?.length || 0} targets</td>
+                  <td>{schedule.scan_type || 'N/A'}</td>
+                  <td>{schedule.frequency || 'N/A'}</td>
+                  <td>
+                    <span className={`status-badge status-${schedule.enabled ? 'enabled' : 'disabled'}`}>
+                      {schedule.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </td>
+                  <td>{schedule.next_run ? new Date(schedule.next_run).toLocaleString() : 'N/A'}</td>
+                  <td>
+                    <button
+                      className="btn-icon"
+                      onClick={() => deleteSchedule.mutate(schedule.id)}
+                      disabled={deleteSchedule.isPending}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import { Plus, Trash2, RefreshCw } from 'lucide-react'
 import './EDR.css'
+import './shared.css'
 
 const EDR: React.FC = () => {
   const queryClient = useQueryClient()
@@ -15,12 +16,18 @@ const EDR: React.FC = () => {
     base_url: '',
   })
 
-  const { data: integrations = [] } = useQuery({
+  const { data: integrations = [], isLoading, error } = useQuery({
     queryKey: ['edr-integrations'],
     queryFn: async () => {
-      const res = await api.get('/edr/integrations')
-      return res.data
+      try {
+        const res = await api.get('/edr/integrations')
+        return res.data || []
+      } catch (error: any) {
+        console.error('Failed to load EDR integrations:', error)
+        return []
+      }
     },
+    retry: 1,
   })
 
   const createIntegration = useMutation({
@@ -31,6 +38,11 @@ const EDR: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['edr-integrations'] })
       setShowCreateModal(false)
+      setFormData({ provider: 'crowdstrike', name: '', api_key: '', api_secret: '', base_url: '' })
+    },
+    onError: (error: any) => {
+      console.error('Failed to create EDR integration:', error)
+      alert(`Failed to create integration: ${error.response?.data?.detail || error.message}`)
     },
   })
 
@@ -40,6 +52,10 @@ const EDR: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['edr-integrations'] })
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete integration:', error)
+      alert(`Failed to delete integration: ${error.response?.data?.detail || error.message}`)
     },
   })
 
@@ -51,11 +67,26 @@ const EDR: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['edr-integrations'] })
     },
+    onError: (error: any) => {
+      console.error('Failed to sync integration:', error)
+      alert(`Failed to sync integration: ${error.response?.data?.detail || error.message}`)
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     createIntegration.mutate(formData)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="edr-page">
+        <div className="page-header">
+          <h1>EDR Integrations</h1>
+        </div>
+        <div className="loading">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -67,6 +98,12 @@ const EDR: React.FC = () => {
           Add Integration
         </button>
       </div>
+
+      {error && (
+        <div className="error-message">
+          Failed to load EDR integrations: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
@@ -124,8 +161,8 @@ const EDR: React.FC = () => {
                 <button type="button" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Create
+                <button type="submit" className="btn-primary" disabled={createIntegration.isPending}>
+                  {createIntegration.isPending ? 'Creating...' : 'Create'}
                 </button>
               </div>
             </form>
@@ -133,44 +170,50 @@ const EDR: React.FC = () => {
         </div>
       )}
 
-      <div className="integrations-grid">
-        {integrations.map((integration: any) => (
-          <div key={integration.id} className="integration-card">
-            <div className="integration-header">
-              <h3>{integration.name}</h3>
-              <span className={`status-badge status-${integration.status}`}>
-                {integration.status}
-              </span>
-            </div>
-            <div className="integration-info">
-              <div className="info-row">
-                <span className="info-label">Provider:</span>
-                <span>{integration.provider}</span>
+      {integrations.length === 0 ? (
+        <div className="empty-state">No EDR integrations configured. Add an integration to get started.</div>
+      ) : (
+        <div className="integrations-grid">
+          {integrations.map((integration: any) => (
+            <div key={integration.id} className="integration-card">
+              <div className="integration-header">
+                <h3>{integration.name || 'Unnamed'}</h3>
+                <span className={`status-badge status-${integration.status || 'unknown'}`}>
+                  {integration.status || 'unknown'}
+                </span>
               </div>
-              <div className="info-row">
-                <span className="info-label">Last Sync:</span>
-                <span>{integration.last_sync ? new Date(integration.last_sync).toLocaleString() : 'Never'}</span>
+              <div className="integration-info">
+                <div className="info-row">
+                  <span className="info-label">Provider:</span>
+                  <span>{integration.provider || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Last Sync:</span>
+                  <span>{integration.last_sync ? new Date(integration.last_sync).toLocaleString() : 'Never'}</span>
+                </div>
+              </div>
+              <div className="integration-actions">
+                <button
+                  className="btn-primary"
+                  onClick={() => syncIntegration.mutate(integration.id)}
+                  disabled={syncIntegration.isPending}
+                >
+                  <RefreshCw size={16} />
+                  {syncIntegration.isPending ? 'Syncing...' : 'Sync'}
+                </button>
+                <button
+                  className="btn-danger"
+                  onClick={() => deleteIntegration.mutate(integration.id)}
+                  disabled={deleteIntegration.isPending}
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
               </div>
             </div>
-            <div className="integration-actions">
-              <button
-                className="btn-primary"
-                onClick={() => syncIntegration.mutate(integration.id)}
-              >
-                <RefreshCw size={16} />
-                Sync
-              </button>
-              <button
-                className="btn-danger"
-                onClick={() => deleteIntegration.mutate(integration.id)}
-              >
-                <Trash2 size={16} />
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

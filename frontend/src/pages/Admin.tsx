@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import { Save } from 'lucide-react'
 import './Admin.css'
+import './shared.css'
 
 const Admin: React.FC = () => {
   const queryClient = useQueryClient()

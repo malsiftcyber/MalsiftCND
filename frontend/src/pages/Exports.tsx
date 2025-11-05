@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import api from '../services/api'
 import { Download } from 'lucide-react'
 import './Exports.css'
+import './shared.css'
 
 const Exports: React.FC = () => {
   const [exportType, setExportType] = useState('devices')
@@ -21,6 +22,10 @@ const Exports: React.FC = () => {
       document.body.appendChild(link)
       link.click()
       link.remove()
+    },
+    onError: (error: any) => {
+      console.error('Failed to export data:', error)
+      alert(`Failed to export data: ${error.response?.data?.detail || error.message}`)
     },
   })
 
@@ -55,6 +60,11 @@ const Exports: React.FC = () => {
           <Download size={20} />
           {exportData.isPending ? 'Exporting...' : 'Export Data'}
         </button>
+        {exportData.isError && (
+          <div className="error-message" style={{ marginTop: '1rem' }}>
+            Export failed. Please try again.
+          </div>
+        )}
       </div>
     </div>
   )

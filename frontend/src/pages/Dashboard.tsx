@@ -4,23 +4,38 @@ import api from '../services/api'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Activity, Server, Search, Shield } from 'lucide-react'
 import './Dashboard.css'
+import './shared.css'
 
 const Dashboard: React.FC = () => {
-  const { data: scans } = useQuery({
+  const { data: scans = [], isLoading: scansLoading, error: scansError } = useQuery({
     queryKey: ['scans'],
     queryFn: async () => {
-      const res = await api.get('/scans/', { params: { limit: 10 } })
-      return res.data
+      try {
+        const res = await api.get('/scans/', { params: { limit: 10 } })
+        return res.data || []
+      } catch (error: any) {
+        console.error('Failed to load scans:', error)
+        return []
+      }
     },
+    retry: 1,
   })
 
-  const { data: devices } = useQuery({
+  const { data: devices = [], isLoading: devicesLoading, error: devicesError } = useQuery({
     queryKey: ['devices'],
     queryFn: async () => {
-      const res = await api.get('/devices/', { params: { limit: 100 } })
-      return res.data
+      try {
+        const res = await api.get('/devices/', { params: { limit: 100 } })
+        return res.data || []
+      } catch (error: any) {
+        console.error('Failed to load devices:', error)
+        return []
+      }
     },
+    retry: 1,
   })
+
+  const isLoading = scansLoading || devicesLoading
 
   const scanStatusCounts = scans?.reduce((acc: any, scan: any) => {
     acc[scan.status] = (acc[scan.status] || 0) + 1
@@ -45,9 +60,25 @@ const Dashboard: React.FC = () => {
 
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe']
 
+  if (isLoading) {
+    return (
+      <div className="dashboard">
+        <h1>Dashboard</h1>
+        <div className="loading">Loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="dashboard">
       <h1>Dashboard</h1>
+
+      {(scansError || devicesError) && (
+        <div className="error-message">
+          {scansError && <div>Failed to load scans: {scansError instanceof Error ? scansError.message : 'Unknown error'}</div>}
+          {devicesError && <div>Failed to load devices: {devicesError instanceof Error ? devicesError.message : 'Unknown error'}</div>}
+        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -94,75 +125,86 @@ const Dashboard: React.FC = () => {
       <div className="charts-grid">
         <div className="chart-card">
           <h2>Scan Status Distribution</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#667eea" />
-            </BarChart>
-          </ResponsiveContainer>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#667eea" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">No scan data available</div>
+          )}
         </div>
 
         <div className="chart-card">
           <h2>Device Types</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {pieData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">No device data available</div>
+          )}
         </div>
       </div>
 
       <div className="recent-scans">
         <h2>Recent Scans</h2>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Scan ID</th>
-                <th>Targets</th>
-                <th>Status</th>
-                <th>Scanner</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scans?.slice(0, 10).map((scan: any) => (
-                <tr key={scan.scan_id}>
-                  <td>{scan.scan_id.substring(0, 8)}...</td>
-                  <td>{scan.targets?.length || 0} targets</td>
-                  <td>
-                    <span className={`status-badge status-${scan.status}`}>
-                      {scan.status}
-                    </span>
-                  </td>
-                  <td>{scan.scanner}</td>
-                  <td>{new Date(scan.created_at).toLocaleDateString()}</td>
+        {scans.length === 0 ? (
+          <div className="empty-state">No scans found. Create your first scan to get started.</div>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scan ID</th>
+                  <th>Targets</th>
+                  <th>Status</th>
+                  <th>Scanner</th>
+                  <th>Created</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {scans.slice(0, 10).map((scan: any) => (
+                  <tr key={scan.scan_id}>
+                    <td>{scan.scan_id?.substring(0, 8) || 'N/A'}...</td>
+                    <td>{scan.targets?.length || 0} targets</td>
+                    <td>
+                      <span className={`status-badge status-${scan.status || 'unknown'}`}>
+                        {scan.status || 'unknown'}
+                      </span>
+                    </td>
+                    <td>{scan.scanner || 'N/A'}</td>
+                    <td>{scan.created_at ? new Date(scan.created_at).toLocaleDateString() : 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export default Dashboard
-
