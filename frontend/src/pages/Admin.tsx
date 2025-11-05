@@ -15,23 +15,36 @@ const Admin: React.FC = () => {
     sync_interval: 3600,
   })
 
-  const { data: systemConfig } = useQuery({
+  const { data: systemConfig, isLoading: configLoading, error: configError } = useQuery({
     queryKey: ['system-config'],
     queryFn: async () => {
-      const res = await api.get('/admin/system/config')
-      return res.data
+      try {
+        const res = await api.get('/admin/system/config')
+        return res.data
+      } catch (error: any) {
+        console.error('Failed to load system config:', error)
+        throw error
+      }
     },
     onSuccess: (data) => {
       if (data) setConfig(data)
     },
+    retry: 1,
   })
 
-  const { data: scanners = [] } = useQuery({
+  const { data: scanners = [], isLoading: scannersLoading, error: scannersError } = useQuery({
     queryKey: ['scanners'],
     queryFn: async () => {
-      const res = await api.get('/admin/scanners')
-      return res.data
+      try {
+        const res = await api.get('/admin/scanners')
+        return res.data || []
+      } catch (error: any) {
+        console.error('Failed to load scanners:', error)
+        // Return empty array instead of throwing to allow page to render
+        return []
+      }
     },
+    retry: 1,
   })
 
   const updateSystemConfig = useMutation({
@@ -43,6 +56,10 @@ const Admin: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['system-config'] })
       alert('Configuration saved successfully')
     },
+    onError: (error: any) => {
+      console.error('Failed to save config:', error)
+      alert(`Failed to save configuration: ${error.response?.data?.detail || error.message}`)
+    },
   })
 
   const updateScanner = useMutation({
@@ -53,6 +70,10 @@ const Admin: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scanners'] })
     },
+    onError: (error: any) => {
+      console.error('Failed to update scanner:', error)
+      alert(`Failed to update scanner: ${error.response?.data?.detail || error.message}`)
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,11 +81,34 @@ const Admin: React.FC = () => {
     updateSystemConfig.mutate(config)
   }
 
+  if (configLoading || scannersLoading) {
+    return (
+      <div className="admin-page">
+        <div className="page-header">
+          <h1>Admin Panel</h1>
+        </div>
+        <div className="loading">Loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="admin-page">
       <div className="page-header">
         <h1>Admin Panel</h1>
       </div>
+
+      {configError && (
+        <div className="error-message">
+          Failed to load system configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+        </div>
+      )}
+
+      {scannersError && (
+        <div className="error-message">
+          Failed to load scanner configuration: {scannersError instanceof Error ? scannersError.message : 'Unknown error'}
+        </div>
+      )}
 
       <div className="admin-sections">
         <div className="admin-section">
@@ -130,33 +174,38 @@ const Admin: React.FC = () => {
                 max="86400"
               />
             </div>
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn-primary" disabled={updateSystemConfig.isPending}>
               <Save size={20} />
-              Save Configuration
+              {updateSystemConfig.isPending ? 'Saving...' : 'Save Configuration'}
             </button>
           </form>
         </div>
 
         <div className="admin-section">
           <h2>Scanner Configuration</h2>
-          <div className="scanners-list">
-            {scanners.map((scanner: any) => (
-              <div key={scanner.scanner_name} className="scanner-item">
-                <div className="scanner-info">
-                  <h3>{scanner.scanner_name}</h3>
-                  <span className={`status-badge status-${scanner.enabled ? 'enabled' : 'disabled'}`}>
-                    {scanner.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
+          {scanners.length === 0 ? (
+            <div className="empty-state">No scanners configured</div>
+          ) : (
+            <div className="scanners-list">
+              {scanners.map((scanner: any) => (
+                <div key={scanner.scanner_name} className="scanner-item">
+                  <div className="scanner-info">
+                    <h3>{scanner.scanner_name}</h3>
+                    <span className={`status-badge status-${scanner.enabled ? 'enabled' : 'disabled'}`}>
+                      {scanner.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                  <button
+                    className="btn-primary"
+                    onClick={() => updateScanner.mutate({ name: scanner.scanner_name, enabled: !scanner.enabled })}
+                    disabled={updateScanner.isPending}
+                  >
+                    {scanner.enabled ? 'Disable' : 'Enable'}
+                  </button>
                 </div>
-                <button
-                  className="btn-primary"
-                  onClick={() => updateScanner.mutate({ name: scanner.scanner_name, enabled: !scanner.enabled })}
-                >
-                  {scanner.enabled ? 'Disable' : 'Enable'}
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
