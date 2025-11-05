@@ -4,11 +4,13 @@ MalsiftCND - Main Application Entry Point
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import structlog
 
 from app.core.config import settings
@@ -85,16 +87,52 @@ async def status():
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve frontend (if directory exists)
-# Use StaticFiles with html=True for automatic SPA routing support
+# Serve frontend static assets (JS, CSS, images)
 if os.path.exists("frontend/dist"):
-    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+    assets_path = os.path.join("frontend/dist", "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+    
+    # Serve favicon and other root files
+    @app.get("/favicon.ico")
+    async def favicon():
+        favicon_path = os.path.join("frontend/dist", "favicon.ico")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
+        raise HTTPException(status_code=404)
+    
+    # Serve index.html for root
+    @app.get("/", response_class=HTMLResponse)
+    async def serve_root():
+        """Serve React app root"""
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        raise HTTPException(status_code=404, detail="Frontend not found")
+    
+    # Catch-all handler for SPA routes - must be LAST
+    @app.exception_handler(404)
+    async def spa_handler(request: Request, exc: HTTPException):
+        """Serve index.html for all non-API routes (SPA routing)"""
+        # Skip API routes, health check, and assets
+        path = request.url.path
+        if path.startswith("/api/") or path.startswith("/health") or path.startswith("/assets/") or path.startswith("/static/"):
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+        
+        # Serve index.html for React Router
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        
+        return JSONResponse(status_code=404, content={"detail": "Frontend not found"})
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
     async def root_html():
         """Serve login page"""
-        with open("static/index.html", "r") as f:
+        with open("static/index.html", "r", encoding="utf-8") as f:
             return f.read()
 else:
     # Fallback: return API info JSON
