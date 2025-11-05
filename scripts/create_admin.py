@@ -81,8 +81,8 @@ async def main():
             # Create new user
             await conn.execute(
                 text("""
-                    INSERT INTO users (id, username, email, hashed_password, is_active, is_admin, created_at, auth_type)
-                    VALUES (:id, :username, :email, :password, :is_active, :is_admin, :created_at, :auth_type)
+                    INSERT INTO users (id, username, email, hashed_password, is_active, is_admin, mfa_enabled, created_at, auth_type)
+                    VALUES (:id, :username, :email, :password, :is_active, :is_admin, :mfa_enabled, :created_at, :auth_type)
                 """),
                 {
                     "id": user_id,
@@ -91,6 +91,7 @@ async def main():
                     "password": hashed_password,
                     "is_active": True,
                     "is_admin": True,
+                    "mfa_enabled": False,
                     "created_at": datetime.now(),
                     "auth_type": "local"
                 }
