@@ -141,6 +141,30 @@ else:
             ]
         }
 
+# Catch-all route for SPA - MUST be last route defined
+if os.path.exists("frontend/dist"):
+    @app.get("/{full_path:path}")
+    async def catch_all(full_path: str, request: Request):
+        """Catch-all handler for React Router - serves index.html for all non-API routes"""
+        path = request.url.path
+        
+        # Don't handle API routes, assets, or static files (these should have matched above)
+        if path.startswith("/api/") or path.startswith("/assets/") or path.startswith("/static/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Try to serve actual file if it exists (favicon, etc.)
+        file_path = os.path.join("frontend/dist", full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # Otherwise serve index.html for React Router
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
 
 if __name__ == "__main__":
     import uvicorn
