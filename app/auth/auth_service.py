@@ -58,20 +58,33 @@ class AuthService:
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
+        if not plain_password or not hashed_password:
+            self.logger.warning("Empty password or hash provided")
+            return False
+        
         # Bcrypt has a 72-byte limit - truncate if necessary for verification
         password_bytes = plain_password.encode('utf-8')
         if len(password_bytes) > 72:
-            plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
+            password_bytes = password_bytes[:72]
+            self.logger.debug("Password truncated to 72 bytes for verification")
         
         # Use bcrypt directly to avoid passlib bug detection issues
         try:
-            password_bytes = plain_password.encode('utf-8')
-            if len(password_bytes) > 72:
-                password_bytes = password_bytes[:72]
-            return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
-        except Exception:
+            # hashed_password should already be a string from the database
+            # bcrypt.checkpw expects bytes for both arguments
+            hash_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+            result = bcrypt.checkpw(password_bytes, hash_bytes)
+            if not result:
+                self.logger.debug(f"Password verification failed - hash: {hashed_password[:20]}...")
+            return result
+        except Exception as e:
+            self.logger.error(f"Direct bcrypt verification failed: {e}", exc_info=True)
             # Fallback to passlib if bcrypt direct fails
-            return self.pwd_context.verify(plain_password, hashed_password)
+            try:
+                return self.pwd_context.verify(plain_password, hashed_password)
+            except Exception as e2:
+                self.logger.error(f"Passlib verification also failed: {e2}", exc_info=True)
+                return False
     
     def get_password_hash(self, password: str) -> str:
         """Hash a password"""
