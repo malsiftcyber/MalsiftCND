@@ -91,9 +91,33 @@ class AuthService:
         # Encode to bytes to check length
         password_bytes = password.encode('utf-8')
         if len(password_bytes) > 72:
-            # Truncate to 72 bytes and decode back
-            password = password_bytes[:72].decode('utf-8', errors='ignore')
-        return self.pwd_context.hash(password)
+            # Truncate to 72 bytes
+            password_bytes = password_bytes[:72]
+        
+        # Use bcrypt directly to avoid passlib bug detection issues
+        try:
+            # Generate salt and hash using bcrypt directly
+            salt = bcrypt.gensalt(rounds=12)
+            hashed = bcrypt.hashpw(password_bytes, salt)
+            return hashed.decode('utf-8')
+        except Exception as e:
+            # Fallback to passlib if bcrypt direct fails
+            self.logger.warning(f"Direct bcrypt hashing failed, using passlib: {e}")
+            password_str = password_bytes.decode('utf-8', errors='ignore')
+            try:
+                return self.pwd_context.hash(password_str)
+            except ValueError as ve:
+                if "password cannot be longer than 72 bytes" in str(ve):
+                    # If still too long (shouldn't happen), truncate more aggressively
+                    password_str = password_bytes[:72].decode('utf-8', errors='ignore')
+                    return self.pwd_context.hash(password_str)
+                else:
+                    # Re-raise other ValueError exceptions
+                    raise
+            except Exception as ex:
+                # Log and re-raise other exceptions
+                self.logger.error(f"Password hashing failed: {ex}", exc_info=True)
+                raise
     
     def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
         """Create JWT access token"""
