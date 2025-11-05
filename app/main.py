@@ -108,9 +108,12 @@ if os.path.exists("frontend/dist"):
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         """Serve React app for all non-API routes"""
-        # Skip API routes, health check, and assets
-        if full_path.startswith("api/") or full_path.startswith("api") or full_path == "health" or full_path.startswith("assets/"):
-            return None
+        # Skip API routes, health check, and assets - these are handled above
+        # FastAPI will match more specific routes first, so API routes won't reach here
+        if full_path.startswith("api") or full_path == "health" or full_path.startswith("assets"):
+            # This shouldn't happen, but just in case
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not found")
         
         # Try to serve the file if it exists (for favicon, etc.)
         file_path = os.path.join("frontend/dist", full_path)
