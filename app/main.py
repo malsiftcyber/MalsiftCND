@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import structlog
 
 from app.core.config import settings
@@ -85,41 +86,14 @@ async def status():
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve frontend static assets (JS, CSS, images)
+# Serve frontend (if directory exists)
 if os.path.exists("frontend/dist"):
+    # Mount static assets first
     assets_path = os.path.join("frontend/dist", "assets")
     if os.path.exists(assets_path):
         app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
     
-    # Add SPA middleware to serve index.html for non-API routes
-    from starlette.middleware.base import BaseHTTPMiddleware
-    
-    class SPAMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            path = request.url.path
-            
-            # Let API routes, health check, assets, and static files pass through
-            if (path.startswith("/api/") or 
-                path.startswith("/health") or 
-                path.startswith("/assets/") or 
-                path.startswith("/static/")):
-                return await call_next(request)
-            
-            # Try to get the response
-            response = await call_next(request)
-            
-            # If it's a 404 and not an API route, serve index.html
-            if response.status_code == 404:
-                index_path = os.path.join("frontend/dist", "index.html")
-                if os.path.exists(index_path):
-                    with open(index_path, "r", encoding="utf-8") as f:
-                        return HTMLResponse(content=f.read())
-            
-            return response
-    
-    app.add_middleware(SPAMiddleware)
-    
-    # Serve index.html for root
+    # Serve root index.html
     @app.get("/", response_class=HTMLResponse)
     async def serve_root():
         """Serve React app root"""
@@ -129,28 +103,28 @@ if os.path.exists("frontend/dist"):
                 return HTMLResponse(content=f.read())
         raise HTTPException(status_code=404, detail="Frontend not found")
     
-    # Catch-all route handler for SPA (must be LAST route defined)
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str, request: Request):
-        """Catch-all handler for React Router routes"""
-        path = request.url.path
+    # Custom 404 handler for SPA routing
+    @app.exception_handler(StarletteHTTPException)
+    async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+        """Handle 404s by serving index.html for non-API routes"""
+        if exc.status_code == 404:
+            path = request.url.path
+            
+            # Don't serve index.html for API routes, assets, or static files
+            if (path.startswith("/api/") or 
+                path.startswith("/assets/") or 
+                path.startswith("/static/") or
+                path.startswith("/health")):
+                return JSONResponse(status_code=404, content={"detail": "Not found"})
+            
+            # Serve index.html for all other 404s (SPA routing)
+            index_path = os.path.join("frontend/dist", "index.html")
+            if os.path.exists(index_path):
+                with open(index_path, "r", encoding="utf-8") as f:
+                    return HTMLResponse(content=f.read())
         
-        # Skip API routes and assets (shouldn't reach here, but safety check)
-        if path.startswith("/api/") or path.startswith("/assets/") or path.startswith("/static/"):
-            raise HTTPException(status_code=404, detail="Not found")
-        
-        # Try to serve the file if it exists (for favicon, etc.)
-        file_path = os.path.join("frontend/dist", full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        
-        # Otherwise serve index.html for React Router
-        index_path = os.path.join("frontend/dist", "index.html")
-        if os.path.exists(index_path):
-            with open(index_path, "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
-        
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        # Re-raise other exceptions
+        raise exc
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
