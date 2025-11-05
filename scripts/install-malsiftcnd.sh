@@ -324,13 +324,20 @@ prompt_admin_user() {
         read -p "Admin email: " admin_email
     done
     
-    read -sp "Admin password (min 8 chars): " admin_password
+    read -sp "Admin password (min 8 chars, max 72 chars): " admin_password
     echo ""
     while [ ${#admin_password} -lt 8 ]; do
         print_error "Password must be at least 8 characters"
-        read -sp "Admin password (min 8 chars): " admin_password
+        read -sp "Admin password (min 8 chars, max 72 chars): " admin_password
         echo ""
     done
+    
+    # Check password length in bytes (bcrypt limit is 72 bytes)
+    password_bytes=$(echo -n "$admin_password" | wc -c)
+    if [ $password_bytes -gt 72 ]; then
+        print_warning "Password exceeds 72 bytes (bcrypt limit). It will be truncated."
+        print_warning "Consider using a shorter password for better compatibility."
+    fi
     
     read -sp "Confirm admin password: " admin_password_confirm
     echo ""
