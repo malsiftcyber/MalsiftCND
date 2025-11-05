@@ -287,31 +287,36 @@ class AuthService:
     
     async def _get_local_user(self, username: str) -> Optional[Dict[str, Any]]:
         """Get local user from database"""
-        from sqlalchemy import select
+        from sqlalchemy import select, text
         from sqlalchemy.ext.asyncio import AsyncSession
         from app.core.database import AsyncSessionLocal
-        from app.models.user import User
         
         try:
             async with AsyncSessionLocal() as session:
+                # Use raw SQL to avoid relationship loading issues
                 result = await session.execute(
-                    select(User).where(User.username == username).where(User.auth_type == "local")
+                    text("""
+                        SELECT id, username, email, hashed_password, is_active, is_admin, auth_type
+                        FROM users
+                        WHERE username = :username AND auth_type = 'local'
+                    """),
+                    {"username": username}
                 )
-                user = result.scalar_one_or_none()
+                row = result.fetchone()
                 
-                if not user:
+                if not row:
                     self.logger.debug(f"User '{username}' not found in database")
                     return None
                 
-                self.logger.debug(f"User '{username}' found: active={user.is_active}, admin={user.is_admin}")
+                self.logger.debug(f"User '{username}' found: active={row.is_active}, admin={row.is_admin}")
                 return {
-                    "id": str(user.id),
-                    "username": user.username,
-                    "email": user.email,
-                    "hashed_password": user.hashed_password,
-                    "is_active": user.is_active,
-                    "is_admin": user.is_admin,
-                    "auth_type": user.auth_type or "local"
+                    "id": str(row.id),
+                    "username": row.username,
+                    "email": row.email,
+                    "hashed_password": row.hashed_password,
+                    "is_active": row.is_active,
+                    "is_admin": row.is_admin,
+                    "auth_type": row.auth_type or "local"
                 }
         except Exception as e:
             self.logger.error(f"Failed to get user from database: {e}", exc_info=True)
