@@ -11,6 +11,7 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import HTTPException, status
 import logging
+import bcrypt
 
 from app.core.config import settings
 
@@ -20,7 +21,27 @@ class AuthService:
     
     def __init__(self):
         self.logger = logging.getLogger("auth.service")
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        # Configure CryptContext to avoid bcrypt bug detection issues
+        # Wrap in try/except to handle passlib/bcrypt compatibility issues
+        try:
+            self.pwd_context = CryptContext(
+                schemes=["bcrypt"],
+                deprecated="auto",
+                bcrypt__ident="2b",  # Use bcrypt identifier 2b (standard)
+                bcrypt__rounds=12,   # Set rounds explicitly
+            )
+            # Test that it works by hashing a short password
+            try:
+                self.pwd_context.hash("test")
+            except Exception as e:
+                self.logger.warning(f"Bcrypt initialization test failed: {e}, trying alternative configuration")
+                # Fallback: simpler configuration without explicit settings
+                self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize CryptContext: {e}")
+            # Last resort: use default configuration
+            self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
         self.ad_client = None
         self.azure_client = None
         self._initialize_external_auth()
@@ -53,7 +74,16 @@ class AuthService:
         password_bytes = plain_password.encode('utf-8')
         if len(password_bytes) > 72:
             plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
-        return self.pwd_context.verify(plain_password, hashed_password)
+        
+        # Use bcrypt directly to avoid passlib bug detection issues
+        try:
+            password_bytes = plain_password.encode('utf-8')
+            if len(password_bytes) > 72:
+                password_bytes = password_bytes[:72]
+            return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+        except Exception:
+            # Fallback to passlib if bcrypt direct fails
+            return self.pwd_context.verify(plain_password, hashed_password)
     
     def get_password_hash(self, password: str) -> str:
         """Hash a password"""
