@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 import structlog
 
 from app.core.config import settings
@@ -87,7 +87,30 @@ if os.path.exists("static"):
 
 # Serve frontend (if directory exists)
 if os.path.exists("frontend/dist"):
-    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+    # Serve static assets (JS, CSS, images) from the dist folder
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+    
+    # Serve index.html for all non-API routes (SPA routing)
+    # This must be last to catch all routes not matched above
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Serve React app for all non-API routes"""
+        # Skip API routes and health check
+        if full_path.startswith("api/") or full_path == "health" or full_path == "api":
+            return None
+        
+        # Try to serve the file if it exists (for assets, etc.)
+        file_path = os.path.join("frontend/dist", full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # Otherwise serve index.html for React Router
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r") as f:
+                return HTMLResponse(content=f.read())
+        
+        return HTMLResponse(content="<h1>Frontend not found</h1>", status_code=404)
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
