@@ -102,29 +102,6 @@ if os.path.exists("frontend/dist"):
             with open(index_path, "r", encoding="utf-8") as f:
                 return HTMLResponse(content=f.read())
         raise HTTPException(status_code=404, detail="Frontend not found")
-    
-    # Custom 404 handler for SPA routing
-    @app.exception_handler(StarletteHTTPException)
-    async def custom_404_handler(request: Request, exc: StarletteHTTPException):
-        """Handle 404s by serving index.html for non-API routes"""
-        if exc.status_code == 404:
-            path = request.url.path
-            
-            # Don't serve index.html for API routes, assets, or static files
-            if (path.startswith("/api/") or 
-                path.startswith("/assets/") or 
-                path.startswith("/static/") or
-                path.startswith("/health")):
-                return JSONResponse(status_code=404, content={"detail": "Not found"})
-            
-            # Serve index.html for all other 404s (SPA routing)
-            index_path = os.path.join("frontend/dist", "index.html")
-            if os.path.exists(index_path):
-                with open(index_path, "r", encoding="utf-8") as f:
-                    return HTMLResponse(content=f.read())
-        
-        # Re-raise other exceptions
-        raise exc
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
