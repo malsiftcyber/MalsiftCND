@@ -128,6 +128,29 @@ if os.path.exists("frontend/dist"):
             with open(index_path, "r", encoding="utf-8") as f:
                 return HTMLResponse(content=f.read())
         raise HTTPException(status_code=404, detail="Frontend not found")
+    
+    # Catch-all route handler for SPA (must be LAST route defined)
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str, request: Request):
+        """Catch-all handler for React Router routes"""
+        path = request.url.path
+        
+        # Skip API routes and assets (shouldn't reach here, but safety check)
+        if path.startswith("/api/") or path.startswith("/assets/") or path.startswith("/static/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Try to serve the file if it exists (for favicon, etc.)
+        file_path = os.path.join("frontend/dist", full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # Otherwise serve index.html for React Router
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        
+        raise HTTPException(status_code=404, detail="Frontend not found")
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
