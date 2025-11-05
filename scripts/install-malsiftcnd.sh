@@ -485,6 +485,8 @@ create_admin_user() {
         $DOCKER_SUDO $DOCKER_COMPOSE_CMD logs app | tail -30
         print_error "You can create the admin user manually later using:"
         echo "  sudo docker compose exec app python /app/scripts/create_admin.py $ADMIN_USERNAME $ADMIN_EMAIL <password>"
+        echo "  Or debug login issues with:"
+        echo "  sudo docker compose exec app python /app/scripts/debug_login.py $ADMIN_USERNAME <password>"
         return 1
     fi
     
@@ -615,6 +617,8 @@ asyncio.run(verify())
             cat /tmp/create_admin_output.txt
             print_status "You can manually create the admin user later using:"
             echo "  sudo docker compose exec app python /app/scripts/create_admin.py $ADMIN_USERNAME $ADMIN_EMAIL <password>"
+            echo "  Or debug login issues with:"
+            echo "  sudo docker compose exec app python /app/scripts/debug_login.py $ADMIN_USERNAME <password>"
         fi
     else
         print_error "Failed to execute admin user creation script"
