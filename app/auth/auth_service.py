@@ -21,22 +21,10 @@ class AuthService:
     
     def __init__(self):
         self.logger = logging.getLogger("auth.service")
-        # Configure CryptContext to avoid bcrypt bug detection issues
-        # Wrap in try/except to handle passlib/bcrypt compatibility issues
+        # Configure CryptContext - use simple configuration to avoid bug detection issues
+        # We'll use bcrypt directly for hashing/verification, but keep passlib as fallback
         try:
-            self.pwd_context = CryptContext(
-                schemes=["bcrypt"],
-                deprecated="auto",
-                bcrypt__ident="2b",  # Use bcrypt identifier 2b (standard)
-                bcrypt__rounds=12,   # Set rounds explicitly
-            )
-            # Test that it works by hashing a short password
-            try:
-                self.pwd_context.hash("test")
-            except Exception as e:
-                self.logger.warning(f"Bcrypt initialization test failed: {e}, trying alternative configuration")
-                # Fallback: simpler configuration without explicit settings
-                self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+            self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         except Exception as e:
             self.logger.error(f"Failed to initialize CryptContext: {e}")
             # Last resort: use default configuration
