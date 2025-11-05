@@ -8,7 +8,7 @@ sys.path.insert(0, '/app')
 import asyncio
 import uuid
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import text
 from app.core.database import async_engine, init_db
 from app.auth.auth_service import AuthService
@@ -50,7 +50,8 @@ async def main():
     # Hash password
     auth_service = AuthService()
     hashed_password = auth_service.get_password_hash(password)
-    user_id = str(uuid.uuid4())
+    # Use UUID object directly (PostgreSQL accepts UUID strings too, but being explicit)
+    user_id = uuid.uuid4()
     
     async with async_engine.begin() as conn:
         # Check if user already exists
@@ -92,7 +93,7 @@ async def main():
                     "is_active": True,
                     "is_admin": True,
                     "mfa_enabled": False,
-                    "created_at": datetime.now(),
+                    "created_at": datetime.now(timezone.utc),  # Use timezone-aware datetime
                     "auth_type": "local"
                 }
             )
