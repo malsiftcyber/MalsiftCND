@@ -86,11 +86,43 @@ async def status():
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve frontend - MUST be LAST after all API routes
+# Serve frontend - MUST be LAST after all API routes  
 if os.path.exists("frontend/dist"):
-    # Mount the entire frontend/dist directory with html=True for SPA support
-    # This will serve index.html for any route that doesn't match above
-    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+    # Mount static assets
+    assets_path = os.path.join("frontend/dist", "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+    
+    # Serve root
+    @app.get("/", response_class=HTMLResponse)
+    async def serve_root():
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        raise HTTPException(status_code=404)
+    
+    # Catch-all route handler - serves index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str, request: Request):
+        path = request.url.path
+        
+        # Don't handle API routes or assets
+        if path.startswith("/api/") or path.startswith("/assets/"):
+            raise HTTPException(status_code=404)
+        
+        # Try to serve file if exists
+        file_path = os.path.join("frontend/dist", full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # Serve index.html for React Router
+        index_path = os.path.join("frontend/dist", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        
+        raise HTTPException(status_code=404)
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
