@@ -1,14 +1,10 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { LogOut, Menu, X } from 'lucide-react'
 import './Layout.css'
 
-interface LayoutProps {
-  children: React.ReactNode
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -68,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </aside>
 
         <main className="main-content">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
