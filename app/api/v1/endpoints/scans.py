@@ -27,11 +27,22 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 class ScanRequest(BaseModel):
     targets: List[str] = Field(..., description="List of IP addresses or CIDR blocks to scan")
-    scan_type: ScanType = Field(default=ScanType.PORT_SCAN, description="Type of scan to perform")
+    scan_type: str = Field(default="port_scan", description="Type of scan to perform")
     ports: Optional[List[int]] = Field(default=None, description="Specific ports to scan")
     scanner: str = Field(default="nmap", description="Scanner to use (nmap, masscan)")
     timeout: int = Field(default=300, description="Scan timeout in seconds")
     rate_limit: Optional[int] = Field(default=None, description="Rate limit for scanning")
+    
+    def get_scan_type_enum(self) -> ScanType:
+        """Convert string scan_type to ScanType enum"""
+        scan_type_map = {
+            "ping_sweep": ScanType.PING_SWEEP,
+            "port_scan": ScanType.PORT_SCAN,
+            "service_detection": ScanType.SERVICE_DETECTION,
+            "os_detection": ScanType.OS_DETECTION,
+            "vulnerability_scan": ScanType.VULNERABILITY_SCAN,
+        }
+        return scan_type_map.get(self.scan_type, ScanType.PORT_SCAN)
 
 
 class ScanResponse(BaseModel):
@@ -74,7 +85,7 @@ async def create_scan(
     try:
         scan_id = await scan_service.create_scan(
             targets=request.targets,
-            scan_type=request.scan_type,
+            scan_type=request.get_scan_type_enum(),
             ports=request.ports,
             scanner=request.scanner,
             timeout=request.timeout,
@@ -92,10 +103,10 @@ async def create_scan(
             scan_id=scan_id,
             status="queued",
             targets=request.targets,
-            scan_type=request.scan_type.value,
+            scan_type=request.get_scan_type_enum().value,
             scanner=request.scanner,
             created_at=datetime.now(),
-            estimated_duration=scan_service.estimate_duration(request.targets, request.scan_type)
+            estimated_duration=scan_service.estimate_duration(request.targets, request.get_scan_type_enum())
         )
         
     except Exception as e:
