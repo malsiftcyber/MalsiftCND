@@ -116,6 +116,57 @@ async def create_scan(
         )
 
 
+@router.get("/{scan_id}", response_model=ScanResponse)
+async def get_scan(
+    scan_id: str,
+    payload: dict = Depends(verify_token)
+):
+    """Get scan details by ID"""
+    try:
+        # Get scan status which includes basic info
+        status_info = await scan_service.get_scan_status(scan_id)
+        
+        # Get the full scan info from active_scans
+        if scan_id not in scan_service.active_scans:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Scan not found"
+            )
+        
+        scan_info = scan_service.active_scans[scan_id]
+        
+        # Check if user owns the scan
+        if scan_info.get("user_id") != payload.get("user_id"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
+            )
+        
+        # Convert to ScanResponse format
+        scan_dict = {
+            "scan_id": scan_info["scan_id"],
+            "status": scan_info["status"].value if hasattr(scan_info["status"], "value") else str(scan_info["status"]),
+            "targets": scan_info["targets"],
+            "scan_type": scan_info["scan_type"].value if hasattr(scan_info["scan_type"], "value") else str(scan_info["scan_type"]),
+            "scanner": scan_info["scanner"],
+            "created_at": scan_info["created_at"],
+            "estimated_duration": scan_service.estimate_duration(
+                scan_info["targets"],
+                scan_info["scan_type"] if isinstance(scan_info["scan_type"], ScanType) else ScanType.PORT_SCAN
+            )
+        }
+        
+        return ScanResponse(**scan_dict)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scan not found: {str(e)}"
+        )
+
+
 @router.get("/{scan_id}/status", response_model=ScanStatus)
 async def get_scan_status(
     scan_id: str,
