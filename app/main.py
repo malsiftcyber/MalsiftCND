@@ -61,6 +61,39 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
+# Add SPA middleware FIRST - intercepts requests before routing
+if os.path.exists("frontend/dist"):
+    from starlette.middleware.base import BaseHTTPMiddleware
+    
+    class SPAMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            path = request.url.path
+            
+            # Allow API routes, health check, assets, and static files through
+            if (path.startswith("/api/") or 
+                path.startswith("/health") or 
+                path.startswith("/assets/") or 
+                path.startswith("/static/")):
+                return await call_next(request)
+            
+            # For all other routes, if it's a GET request, serve index.html
+            if request.method == "GET":
+                # Check if route is already handled (let it try first)
+                response = await call_next(request)
+                
+                # If response is 404, serve index.html instead
+                if response.status_code == 404:
+                    index_path = os.path.join("frontend/dist", "index.html")
+                    if os.path.exists(index_path):
+                        with open(index_path, "r", encoding="utf-8") as f:
+                            return HTMLResponse(content=f.read())
+                
+                return response
+            
+            return await call_next(request)
+    
+    app.add_middleware(SPAMiddleware)
+
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
