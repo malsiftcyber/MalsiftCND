@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { LogOut, Menu, X } from 'lucide-react'
 import './Layout.css'
@@ -54,19 +54,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <nav className="sidebar-nav">
             {menuItems.map((item) => (
-              <a
+              <Link
                 key={item.path}
-                href={item.path}
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate(item.path)
-                  setSidebarOpen(false)
-                }}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 className="nav-item"
               >
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-label">{item.label}</span>
-              </a>
+              </Link>
             ))}
           </nav>
         </aside>
