@@ -50,7 +50,17 @@ const Scans: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Failed to create scan:', error)
-      alert(`Failed to create scan: ${error.response?.data?.detail || error.message}`)
+      let errorMessage = 'Unknown error occurred'
+      if (error.response?.data?.detail) {
+        errorMessage = typeof error.response.data.detail === 'string' 
+          ? error.response.data.detail 
+          : JSON.stringify(error.response.data.detail)
+      } else if (error.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      alert(`Failed to create scan: ${errorMessage}`)
     },
   })
 

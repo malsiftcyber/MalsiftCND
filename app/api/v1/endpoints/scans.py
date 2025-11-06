@@ -3,6 +3,7 @@ Scan management API endpoints
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
@@ -14,8 +15,14 @@ from app.services.scan_service import ScanService
 from app.auth.auth_service import AuthService
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 scan_service = ScanService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 class ScanRequest(BaseModel):
@@ -61,7 +68,7 @@ class ScanResult(BaseModel):
 async def create_scan(
     request: ScanRequest,
     background_tasks: BackgroundTasks,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new scan"""
     try:
@@ -72,7 +79,7 @@ async def create_scan(
             scanner=request.scanner,
             timeout=request.timeout,
             rate_limit=request.rate_limit,
-            user_id=token.get("user_id")
+            user_id=payload.get("user_id")
         )
         
         # Start scan in background
@@ -101,7 +108,7 @@ async def create_scan(
 @router.get("/{scan_id}/status", response_model=ScanStatus)
 async def get_scan_status(
     scan_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get scan status and progress"""
     try:
@@ -119,7 +126,7 @@ async def get_scan_results(
     scan_id: str,
     limit: int = 100,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get scan results"""
     try:
@@ -137,12 +144,12 @@ async def list_scans(
     limit: int = 50,
     offset: int = 0,
     status_filter: Optional[str] = None,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List user's scans"""
     try:
         scans = await scan_service.list_user_scans(
-            user_id=token.get("user_id"),
+            user_id=payload.get("user_id"),
             limit=limit,
             offset=offset,
             status_filter=status_filter
@@ -158,7 +165,7 @@ async def list_scans(
 @router.delete("/{scan_id}")
 async def cancel_scan(
     scan_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Cancel a running scan"""
     try:
@@ -181,7 +188,7 @@ async def cancel_scan(
 async def export_scan_results(
     scan_id: str,
     format: str = "json",
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Export scan results in various formats"""
     try:
