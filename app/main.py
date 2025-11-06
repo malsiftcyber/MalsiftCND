@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 import structlog
 
 from app.core.config import settings
@@ -61,43 +60,11 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
-# Add SPA middleware FIRST - intercepts requests before routing
-if os.path.exists("frontend/dist"):
-    from starlette.middleware.base import BaseHTTPMiddleware
-    
-    class SPAMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            path = request.url.path
-            
-            # Allow API routes, health check, assets, and static files through
-            if (path.startswith("/api/") or 
-                path.startswith("/health") or 
-                path.startswith("/assets/") or 
-                path.startswith("/static/")):
-                return await call_next(request)
-            
-            # For all other routes, if it's a GET request, serve index.html
-            if request.method == "GET":
-                # Check if route is already handled (let it try first)
-                response = await call_next(request)
-                
-                # If response is 404, serve index.html instead
-                if response.status_code == 404:
-                    index_path = os.path.join("frontend/dist", "index.html")
-                    if os.path.exists(index_path):
-                        with open(index_path, "r", encoding="utf-8") as f:
-                            return HTMLResponse(content=f.read())
-                
-                return response
-            
-            return await call_next(request)
-    
-    app.add_middleware(SPAMiddleware)
-
+# IMPORTANT: All API routes MUST be defined BEFORE mounting static files
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
-# Health check endpoint (must be before frontend mount)
+# Health check endpoint
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -119,22 +86,11 @@ async def status():
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve frontend (if directory exists)
+# Serve frontend - MUST be LAST after all API routes
 if os.path.exists("frontend/dist"):
-    # Mount static assets first
-    assets_path = os.path.join("frontend/dist", "assets")
-    if os.path.exists(assets_path):
-        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
-    
-    # Serve root index.html
-    @app.get("/", response_class=HTMLResponse)
-    async def serve_root():
-        """Serve React app root"""
-        index_path = os.path.join("frontend/dist", "index.html")
-        if os.path.exists(index_path):
-            with open(index_path, "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
-        raise HTTPException(status_code=404, detail="Frontend not found")
+    # Mount the entire frontend/dist directory with html=True for SPA support
+    # This will serve index.html for any route that doesn't match above
+    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 elif os.path.exists("static/index.html"):
     # Serve simple login page if no frontend but static directory exists
     @app.get("/", response_class=HTMLResponse)
@@ -173,30 +129,6 @@ else:
                 "/api/v1/admin"
             ]
         }
-
-# Catch-all route for SPA - MUST be last route defined
-if os.path.exists("frontend/dist"):
-    @app.get("/{full_path:path}")
-    async def catch_all(full_path: str, request: Request):
-        """Catch-all handler for React Router - serves index.html for all non-API routes"""
-        path = request.url.path
-        
-        # Don't handle API routes, assets, or static files (these should have matched above)
-        if path.startswith("/api/") or path.startswith("/assets/") or path.startswith("/static/"):
-            raise HTTPException(status_code=404, detail="Not found")
-        
-        # Try to serve actual file if it exists (favicon, etc.)
-        file_path = os.path.join("frontend/dist", full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        
-        # Otherwise serve index.html for React Router
-        index_path = os.path.join("frontend/dist", "index.html")
-        if os.path.exists(index_path):
-            with open(index_path, "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
-        
-        raise HTTPException(status_code=404, detail="Frontend not found")
 
 
 if __name__ == "__main__":
