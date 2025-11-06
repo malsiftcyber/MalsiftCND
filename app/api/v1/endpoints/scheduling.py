@@ -3,6 +3,7 @@ Scan scheduling API endpoints
 """
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -10,8 +11,14 @@ from app.auth.auth_service import AuthService
 from app.services.scheduling_service import SchedulingService, ScanSchedule, ScheduleType, ScheduleFrequency
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 scheduling_service = SchedulingService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 class ScheduleCreateRequest(BaseModel):
@@ -56,9 +63,17 @@ class ScheduleResponse(BaseModel):
     failed_runs: int
 
 
+@router.get("/", response_model=List[ScheduleResponse])
+async def list_schedules_root(
+    payload: dict = Depends(verify_token)
+):
+    """List all scan schedules (root endpoint)"""
+    return await list_schedules(payload)
+
+
 @router.get("/schedules", response_model=List[ScheduleResponse])
 async def list_schedules(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List all scan schedules"""
     try:
@@ -93,7 +108,7 @@ async def list_schedules(
 @router.get("/schedules/{schedule_id}", response_model=ScheduleResponse)
 async def get_schedule(
     schedule_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get a specific schedule"""
     try:
@@ -133,7 +148,7 @@ async def get_schedule(
 @router.post("/schedules", response_model=Dict[str, str])
 async def create_schedule(
     request: ScheduleCreateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new scan schedule"""
     try:
@@ -173,7 +188,7 @@ async def create_schedule(
 async def update_schedule(
     schedule_id: str,
     request: ScheduleUpdateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update an existing schedule"""
     try:
@@ -200,7 +215,7 @@ async def update_schedule(
 @router.delete("/schedules/{schedule_id}")
 async def delete_schedule(
     schedule_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Delete a schedule"""
     try:
@@ -224,7 +239,7 @@ async def delete_schedule(
 @router.post("/schedules/{schedule_id}/enable")
 async def enable_schedule(
     schedule_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Enable a schedule"""
     try:
@@ -248,7 +263,7 @@ async def enable_schedule(
 @router.post("/schedules/{schedule_id}/disable")
 async def disable_schedule(
     schedule_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Disable a schedule"""
     try:
@@ -272,7 +287,7 @@ async def disable_schedule(
 @router.post("/schedules/{schedule_id}/run-now")
 async def run_schedule_now(
     schedule_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Run a schedule immediately"""
     try:
@@ -300,7 +315,7 @@ async def run_schedule_now(
 
 @router.get("/schedules/stats")
 async def get_schedule_stats(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get scheduling statistics"""
     try:
@@ -315,7 +330,7 @@ async def get_schedule_stats(
 
 @router.post("/scheduler/start")
 async def start_scheduler(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Start the scan scheduler"""
     try:
@@ -330,7 +345,7 @@ async def start_scheduler(
 
 @router.post("/scheduler/stop")
 async def stop_scheduler(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Stop the scan scheduler"""
     try:
@@ -345,7 +360,7 @@ async def stop_scheduler(
 
 @router.get("/scheduler/status")
 async def get_scheduler_status(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get scheduler status"""
     try:

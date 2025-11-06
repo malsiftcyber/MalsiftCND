@@ -3,6 +3,7 @@ Accuracy ranking API endpoints
 """
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,8 +12,14 @@ from app.services.accuracy_ranking_service import AccuracyRankingService
 from app.models.accuracy_ranking import DataSourceType
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 accuracy_service = AccuracyRankingService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 # Request/Response Models
@@ -55,7 +62,7 @@ class DashboardCreateRequest(BaseModel):
 async def list_data_sources(
     active_only: bool = True,
     ranked_only: bool = False,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List all data sources"""
     try:
@@ -116,7 +123,7 @@ async def list_data_sources(
 @router.post("/data-sources", response_model=Dict[str, str])
 async def create_data_source(
     request: DataSourceCreateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new data source"""
     try:
@@ -163,7 +170,7 @@ async def create_data_source(
 @router.get("/data-sources/{source_id}", response_model=Dict[str, Any])
 async def get_data_source(
     source_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get data source by ID"""
     try:
@@ -221,7 +228,7 @@ async def get_data_source(
 async def update_data_source(
     source_id: str,
     request: DataSourceUpdateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update data source"""
     try:
@@ -269,7 +276,7 @@ async def update_data_source(
 async def evaluate_data_source(
     source_id: str,
     request: EvaluationRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Evaluate data source accuracy"""
     try:
@@ -286,7 +293,7 @@ async def evaluate_data_source(
 
 @router.post("/rankings/calculate")
 async def calculate_rankings(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Calculate and update data source rankings"""
     try:
@@ -303,7 +310,7 @@ async def calculate_rankings(
 async def get_rankings(
     limit: int = Query(default=50, description="Number of rankings to return", ge=1, le=100),
     offset: int = Query(default=0, description="Number of rankings to skip", ge=0),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get historical rankings"""
     try:
@@ -351,7 +358,7 @@ async def get_rankings(
 @router.get("/dashboard", response_model=Dict[str, Any])
 async def get_dashboard_data(
     dashboard_id: Optional[str] = None,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get accuracy ranking dashboard data"""
     try:
@@ -367,7 +374,7 @@ async def get_dashboard_data(
 @router.post("/dashboard", response_model=Dict[str, str])
 async def create_dashboard(
     request: DashboardCreateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new accuracy dashboard"""
     try:
@@ -416,7 +423,7 @@ async def get_accuracy_alerts(
     severity: Optional[str] = None,
     limit: int = Query(default=50, description="Number of alerts to return", ge=1, le=100),
     offset: int = Query(default=0, description="Number of alerts to skip", ge=0),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get accuracy alerts"""
     try:
@@ -472,7 +479,7 @@ async def get_accuracy_alerts(
 @router.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Acknowledge an accuracy alert"""
     try:
@@ -517,7 +524,7 @@ async def acknowledge_alert(
 async def get_accuracy_metrics(
     period: str = Query(default="daily", description="Metric period", regex="^(hourly|daily|weekly|monthly)$"),
     days: int = Query(default=30, description="Number of days to include", ge=1, le=365),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get accuracy metrics over time"""
     try:
@@ -576,7 +583,7 @@ async def get_accuracy_metrics(
 
 @router.post("/initialize")
 async def initialize_accuracy_system(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Initialize the accuracy ranking system with default data sources"""
     try:
@@ -591,7 +598,7 @@ async def initialize_accuracy_system(
 
 @router.get("/source-types")
 async def get_source_types(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get available data source types"""
     return {

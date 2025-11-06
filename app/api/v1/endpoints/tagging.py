@@ -3,14 +3,21 @@ Tagging API endpoints for company and site management
 """
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 from app.auth.auth_service import AuthService
 from app.services.tagging_service import TaggingService
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 tagging_service = TaggingService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 # Request/Response Models
@@ -75,7 +82,7 @@ class ScanTagRequest(BaseModel):
 @router.post("/companies", response_model=Dict[str, str])
 async def create_company(
     request: CompanyCreateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new company"""
     try:
@@ -107,7 +114,7 @@ async def create_company(
 @router.get("/companies", response_model=List[Dict[str, Any]])
 async def list_companies(
     active_only: bool = True,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List all companies"""
     try:
@@ -123,7 +130,7 @@ async def list_companies(
 @router.get("/companies/{company_id}", response_model=Dict[str, Any])
 async def get_company(
     company_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get company by ID"""
     try:
@@ -147,7 +154,7 @@ async def get_company(
 async def update_company(
     company_id: str,
     request: CompanyUpdateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update company"""
     try:
@@ -174,7 +181,7 @@ async def update_company(
 @router.delete("/companies/{company_id}")
 async def delete_company(
     company_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Delete company"""
     try:
@@ -199,7 +206,7 @@ async def delete_company(
 @router.post("/sites", response_model=Dict[str, str])
 async def create_site(
     request: SiteCreateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new site"""
     try:
@@ -236,7 +243,7 @@ async def create_site(
 async def list_sites(
     company_id: Optional[str] = None,
     active_only: bool = True,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List sites, optionally filtered by company"""
     try:
@@ -252,7 +259,7 @@ async def list_sites(
 @router.get("/sites/{site_id}", response_model=Dict[str, Any])
 async def get_site(
     site_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get site by ID"""
     try:
@@ -276,7 +283,7 @@ async def get_site(
 async def update_site(
     site_id: str,
     request: SiteUpdateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update site"""
     try:
@@ -303,7 +310,7 @@ async def update_site(
 @router.delete("/sites/{site_id}")
 async def delete_site(
     site_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Delete site"""
     try:
@@ -329,7 +336,7 @@ async def delete_site(
 async def tag_device(
     device_id: str,
     request: DeviceTagRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Tag a device with company, site, and custom tags"""
     try:
@@ -360,7 +367,7 @@ async def tag_device(
 @router.get("/devices/{device_id}/tags", response_model=Dict[str, Any])
 async def get_device_tags(
     device_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get all tags for a device"""
     try:
@@ -378,7 +385,7 @@ async def get_device_tags(
 async def tag_scan(
     scan_id: str,
     request: ScanTagRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Tag a scan with company, site, and custom tags"""
     try:
@@ -409,7 +416,7 @@ async def tag_scan(
 @router.get("/scans/{scan_id}/tags", response_model=Dict[str, Any])
 async def get_scan_tags(
     scan_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get all tags for a scan"""
     try:

@@ -3,6 +3,7 @@ EDR integration API endpoints
 """
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,8 +12,14 @@ from app.services.edr_service import EDRIntegrationService
 from app.models.edr_integration import EDRProvider
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 edr_service = EDRIntegrationService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 # Request/Response Models
@@ -67,7 +74,7 @@ class EDRIntegrationUpdateRequest(BaseModel):
 @router.post("/integrations", response_model=Dict[str, str])
 async def create_edr_integration(
     request: EDRIntegrationCreateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new EDR integration"""
     try:
@@ -128,7 +135,7 @@ async def create_edr_integration(
 @router.get("/integrations", response_model=List[Dict[str, Any]])
 async def list_edr_integrations(
     active_only: bool = True,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List all EDR integrations"""
     try:
@@ -179,7 +186,7 @@ async def list_edr_integrations(
 @router.get("/integrations/{integration_id}", response_model=Dict[str, Any])
 async def get_edr_integration(
     integration_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get EDR integration by ID"""
     try:
@@ -237,7 +244,7 @@ async def get_edr_integration(
 async def update_edr_integration(
     integration_id: str,
     request: EDRIntegrationUpdateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update EDR integration"""
     try:
@@ -284,7 +291,7 @@ async def update_edr_integration(
 @router.delete("/integrations/{integration_id}")
 async def delete_edr_integration(
     integration_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Delete EDR integration (soft delete)"""
     try:
@@ -326,7 +333,7 @@ async def delete_edr_integration(
 @router.post("/integrations/{integration_id}/test")
 async def test_edr_integration(
     integration_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Test EDR integration connectivity"""
     try:
@@ -342,7 +349,7 @@ async def test_edr_integration(
 @router.post("/integrations/{integration_id}/sync")
 async def sync_edr_integration(
     integration_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Manually sync EDR integration"""
     try:
@@ -360,7 +367,7 @@ async def get_edr_endpoints(
     integration_id: str,
     limit: int = 100,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get endpoints from EDR integration"""
     try:
@@ -419,7 +426,7 @@ async def get_edr_alerts(
     integration_id: str,
     limit: int = 100,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get alerts from EDR integration"""
     try:
@@ -470,7 +477,7 @@ async def get_edr_sync_logs(
     integration_id: str,
     limit: int = 50,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get sync logs for EDR integration"""
     try:
@@ -513,7 +520,7 @@ async def get_edr_sync_logs(
 
 @router.get("/providers")
 async def get_edr_providers(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get available EDR providers and their configuration requirements"""
     return {

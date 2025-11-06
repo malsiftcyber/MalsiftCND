@@ -173,6 +173,17 @@ async def get_agent_status(
         )
 
 
+@router.get("/", response_model=List[Dict[str, Any]])
+async def list_agents_root(
+    company_id: Optional[str] = Query(None, description="Filter by company ID"),
+    site_id: Optional[str] = Query(None, description="Filter by site ID"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    payload: dict = Depends(verify_token)
+):
+    """List all agents with optional filtering (root endpoint)"""
+    return await list_agents(company_id, site_id, status, payload)
+
+
 @router.get("/agents", response_model=List[Dict[str, Any]])
 async def list_agents(
     company_id: Optional[str] = Query(None, description="Filter by company ID"),

@@ -3,6 +3,7 @@ Device management API endpoints
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -10,8 +11,14 @@ from app.auth.auth_service import AuthService
 from app.services.device_service import DeviceService
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 device_service = DeviceService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 class DeviceResponse(BaseModel):
@@ -45,7 +52,7 @@ async def list_devices(
     search: Optional[str] = Query(default=None),
     device_type: Optional[str] = Query(default=None),
     os: Optional[str] = Query(default=None),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List discovered devices"""
     try:
@@ -69,7 +76,7 @@ async def list_devices(
 @router.get("/{device_ip}", response_model=DeviceResponse)
 async def get_device(
     device_ip: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get device details"""
     try:
@@ -96,7 +103,7 @@ async def search_devices(
     request: DeviceSearchRequest,
     limit: int = Query(default=50, le=1000),
     offset: int = Query(default=0, ge=0),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Search devices with advanced filters"""
     try:
@@ -126,7 +133,7 @@ async def get_device_history(
     device_ip: str,
     limit: int = Query(default=100, le=1000),
     offset: int = Query(default=0, ge=0),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get device discovery history"""
     try:
@@ -149,7 +156,7 @@ async def get_device_history(
 async def update_device_tags(
     device_ip: str,
     tags: List[str],
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update device tags"""
     try:
@@ -175,7 +182,7 @@ async def update_device_tags(
 async def update_device_notes(
     device_ip: str,
     notes: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update device notes"""
     try:
@@ -199,7 +206,7 @@ async def update_device_notes(
 
 @router.get("/stats/summary")
 async def get_device_stats(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get device statistics summary"""
     try:

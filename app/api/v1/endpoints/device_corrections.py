@@ -3,6 +3,7 @@ Device correction API endpoints
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -10,8 +11,14 @@ from app.auth.auth_service import AuthService
 from app.services.device_correction_service import DeviceCorrectionService
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 correction_service = DeviceCorrectionService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 class DeviceCorrectionRequest(BaseModel):
@@ -39,13 +46,13 @@ class CorrectionVerificationRequest(BaseModel):
 async def correct_device(
     device_id: str,
     request: DeviceCorrectionRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Correct device identification"""
     try:
         result = await correction_service.correct_device(
             device_id=device_id,
-            user_id=token.get("user_id"),
+            user_id=payload.get("user_id"),
             corrected_device_type=request.corrected_device_type,
             corrected_os=request.corrected_operating_system,
             correction_reason=request.correction_reason,
@@ -72,7 +79,7 @@ async def correct_device(
 @router.get("/{device_id}/corrections")
 async def get_device_corrections(
     device_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get correction history for a device"""
     try:
@@ -94,13 +101,13 @@ async def get_device_corrections(
 async def submit_device_feedback(
     device_id: str,
     request: DeviceFeedbackRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Submit feedback on device identification"""
     try:
         result = await correction_service.submit_feedback(
             device_id=device_id,
-            user_id=token.get("user_id"),
+            user_id=payload.get("user_id"),
             feedback_type=request.feedback_type,
             accuracy_score=request.accuracy_score,
             device_type_accurate=request.device_type_accurate,
@@ -126,13 +133,13 @@ async def submit_device_feedback(
 async def verify_correction(
     correction_id: str,
     request: CorrectionVerificationRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Verify a device correction (admin only)"""
     try:
         success = await correction_service.verify_correction(
             correction_id=correction_id,
-            verifier_id=token.get("user_id"),
+            verifier_id=payload.get("user_id"),
             feedback_score=request.feedback_score
         )
         
@@ -158,7 +165,7 @@ async def get_correction_patterns(
     pattern_type: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get learned correction patterns"""
     try:
@@ -184,7 +191,7 @@ async def get_correction_patterns(
 @router.post("/{device_id}/apply-patterns")
 async def apply_patterns_to_device(
     device_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Apply learned patterns to improve device identification"""
     try:
@@ -218,7 +225,7 @@ async def apply_patterns_to_device(
 
 @router.get("/stats/corrections")
 async def get_correction_stats(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get correction statistics"""
     try:

@@ -3,6 +3,7 @@ External integrations API endpoints
 """
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -10,8 +11,14 @@ from app.auth.auth_service import AuthService
 from app.services.integration_service import IntegrationService
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 integration_service = IntegrationService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 class IntegrationConfig(BaseModel):
@@ -35,7 +42,7 @@ class SyncRequest(BaseModel):
 
 @router.get("/", response_model=List[IntegrationStatus])
 async def list_integrations(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List available integrations"""
     try:
@@ -52,7 +59,7 @@ async def list_integrations(
 @router.get("/{integration_name}/status", response_model=IntegrationStatus)
 async def get_integration_status(
     integration_name: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get integration status"""
     try:
@@ -78,7 +85,7 @@ async def get_integration_status(
 async def update_integration_config(
     integration_name: str,
     config: IntegrationConfig,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update integration configuration"""
     try:
@@ -107,7 +114,7 @@ async def update_integration_config(
 async def sync_integration(
     integration_name: str,
     request: SyncRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Trigger integration sync"""
     try:
@@ -132,7 +139,7 @@ async def get_integration_data(
     integration_name: str,
     limit: int = 100,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get data from integration"""
     try:
@@ -154,7 +161,7 @@ async def get_sync_history(
     integration_name: str,
     limit: int = 50,
     offset: int = 0,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get integration sync history"""
     try:
