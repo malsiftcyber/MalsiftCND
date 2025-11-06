@@ -165,7 +165,20 @@ async def list_scans(
             offset=offset,
             status_filter=status_filter
         )
-        return [ScanResponse(**scan) for scan in scans]
+        # Convert scan dictionaries to ScanResponse, handling enum status
+        scan_responses = []
+        for scan in scans:
+            scan_dict = {
+                "scan_id": scan["scan_id"],
+                "status": scan["status"].value if hasattr(scan["status"], "value") else str(scan["status"]),
+                "targets": scan["targets"],
+                "scan_type": scan["scan_type"].value if hasattr(scan["scan_type"], "value") else str(scan["scan_type"]),
+                "scanner": scan["scanner"],
+                "created_at": scan["created_at"],
+                "estimated_duration": scan.get("estimated_duration", 0)
+            }
+            scan_responses.append(ScanResponse(**scan_dict))
+        return scan_responses
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -180,7 +193,7 @@ async def cancel_scan(
 ):
     """Cancel a running scan"""
     try:
-        success = await scan_service.cancel_scan(scan_id, token.get("user_id"))
+        success = await scan_service.cancel_scan(scan_id, payload.get("user_id"))
         if success:
             return {"message": "Scan cancelled successfully"}
         else:
