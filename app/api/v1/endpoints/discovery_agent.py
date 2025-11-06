@@ -3,6 +3,7 @@ Discovery agent API endpoints
 """
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,8 +12,14 @@ from app.services.discovery_agent_service import DiscoveryAgentService
 from app.models.discovery_agent import AgentPlatform, AgentStatus
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 agent_service = DiscoveryAgentService()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return payload"""
+    token = credentials.credentials
+    return auth_service.verify_token(token)
 
 
 # Request/Response Models
@@ -87,7 +94,7 @@ class AgentUpdateRequest(BaseModel):
 @router.post("/agents/register", response_model=Dict[str, Any])
 async def register_agent(
     request: AgentRegistrationRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Register a new discovery agent"""
     try:
@@ -104,7 +111,7 @@ async def register_agent(
 async def update_heartbeat(
     agent_id: str,
     request: HeartbeatRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Update agent heartbeat"""
     try:
@@ -121,7 +128,7 @@ async def update_heartbeat(
 async def submit_scan_results(
     agent_id: str,
     request: ScanResultsRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Submit scan results from agent"""
     try:
@@ -137,7 +144,7 @@ async def submit_scan_results(
 @router.get("/agents/{agent_id}/configuration", response_model=Dict[str, Any])
 async def get_agent_configuration(
     agent_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get agent configuration"""
     try:
@@ -153,7 +160,7 @@ async def get_agent_configuration(
 @router.get("/agents/{agent_id}/status", response_model=Dict[str, Any])
 async def get_agent_status(
     agent_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get agent status and metrics"""
     try:
@@ -171,7 +178,7 @@ async def list_agents(
     company_id: Optional[str] = Query(None, description="Filter by company ID"),
     site_id: Optional[str] = Query(None, description="Filter by site ID"),
     status: Optional[str] = Query(None, description="Filter by status"),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """List all agents with optional filtering"""
     try:
@@ -187,7 +194,7 @@ async def list_agents(
 @router.get("/agents/{agent_id}/updates")
 async def check_for_updates(
     agent_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Check for available updates for an agent"""
     try:
@@ -206,7 +213,7 @@ async def check_for_updates(
 @router.post("/updates", response_model=Dict[str, Any])
 async def create_agent_update(
     request: AgentUpdateRequest,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Create a new agent update"""
     try:
@@ -223,7 +230,7 @@ async def create_agent_update(
 async def get_agent_installer(
     platform: str,
     architecture: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get agent installer script for platform"""
     try:
@@ -251,7 +258,7 @@ async def get_agent_installer(
 
 @router.get("/platforms")
 async def get_supported_platforms(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get supported platforms and architectures"""
     return {
@@ -283,7 +290,7 @@ async def get_supported_platforms(
 
 @router.get("/releases")
 async def get_agent_releases(
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get available agent releases"""
     try:
@@ -330,7 +337,7 @@ async def get_agent_scans(
     agent_id: str,
     limit: int = Query(default=50, description="Number of scans to return", ge=1, le=100),
     offset: int = Query(default=0, description="Number of scans to skip", ge=0),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get scans performed by an agent"""
     try:
@@ -388,7 +395,7 @@ async def get_agent_heartbeats(
     agent_id: str,
     limit: int = Query(default=100, description="Number of heartbeats to return", ge=1, le=500),
     offset: int = Query(default=0, description="Number of heartbeats to skip", ge=0),
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Get heartbeats from an agent"""
     try:
@@ -444,7 +451,7 @@ async def get_agent_heartbeats(
 @router.delete("/agents/{agent_id}")
 async def delete_agent(
     agent_id: str,
-    token: str = Depends(auth_service.verify_token)
+    payload: dict = Depends(verify_token)
 ):
     """Delete an agent (soft delete)"""
     try:

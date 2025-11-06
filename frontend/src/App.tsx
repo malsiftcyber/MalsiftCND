@@ -14,6 +14,7 @@ import Exports from './pages/Exports'
 import Agents from './pages/Agents'
 import Accuracy from './pages/Accuracy'
 import Admin from './pages/Admin'
+import AgentDownload from './pages/AgentDownload'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,7 @@ function App() {
         <Route path="tagging" element={<Tagging />} />
         <Route path="exports" element={<Exports />} />
         <Route path="agents" element={<Agents />} />
+        <Route path="agent-download" element={<AgentDownload />} />
         <Route path="accuracy" element={<Accuracy />} />
         <Route path="admin" element={<Admin />} />
       </Route>

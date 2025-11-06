@@ -19,6 +19,7 @@ const Layout: React.FC = () => {
     { path: '/tagging', label: 'Tagging', icon: '🏷️' },
     { path: '/exports', label: 'Exports', icon: '📤' },
     { path: '/agents', label: 'Agents', icon: '🤖' },
+    { path: '/agent-download', label: 'Download Agent', icon: '⬇️' },
     { path: '/accuracy', label: 'Accuracy', icon: '📈' },
   ]
 

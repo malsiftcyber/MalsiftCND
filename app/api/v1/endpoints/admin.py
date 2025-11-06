@@ -3,6 +3,7 @@ Admin API endpoints
 """
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from app.auth.auth_service import AuthService
 from app.services.admin_service import AdminService
 
 router = APIRouter()
+security = HTTPBearer()
 auth_service = AuthService()
 admin_service = AdminService()
 
@@ -44,16 +46,20 @@ class UserUpdateRequest(BaseModel):
     is_admin: Optional[bool] = None
 
 
-def require_admin(token: str = Depends(auth_service.verify_token)):
+def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Require admin privileges"""
-    # In a real implementation, this would check the user's admin status
+    # Extract token from Bearer credentials
+    token = credentials.credentials
+    # Verify token and extract payload
+    payload = auth_service.verify_token(token)
+    # In a real implementation, this would check the user's admin status from the payload
     # For now, we'll assume all authenticated users are admins
-    return token
+    return payload
 
 
 @router.get("/system/config", response_model=SystemConfig)
 async def get_system_config(
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Get system configuration"""
     try:
@@ -70,11 +76,11 @@ async def get_system_config(
 @router.put("/system/config")
 async def update_system_config(
     config: SystemConfig,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Update system configuration"""
     try:
-        success = await admin_service.update_system_config(config.dict())
+        success = await admin_service.update_system_config(config.model_dump())
         if success:
             return {"message": "System configuration updated successfully"}
         else:
@@ -92,7 +98,7 @@ async def update_system_config(
 
 @router.get("/scanners", response_model=List[ScannerConfig])
 async def list_scanners(
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """List scanner configurations"""
     try:
@@ -110,11 +116,11 @@ async def list_scanners(
 async def update_scanner_config(
     scanner_name: str,
     config: ScannerConfig,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Update scanner configuration"""
     try:
-        success = await admin_service.update_scanner_config(scanner_name, config.dict())
+        success = await admin_service.update_scanner_config(scanner_name, config.model_dump())
         if success:
             return {"message": "Scanner configuration updated successfully"}
         else:
@@ -136,7 +142,7 @@ async def update_scanner_config(
 async def list_users(
     limit: int = 50,
     offset: int = 0,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """List system users"""
     try:
@@ -153,7 +159,7 @@ async def list_users(
 @router.post("/users")
 async def create_user(
     request: UserCreateRequest,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Create new user"""
     try:
@@ -180,11 +186,11 @@ async def create_user(
 async def update_user(
     user_id: str,
     request: UserUpdateRequest,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Update user"""
     try:
-        success = await admin_service.update_user(user_id, request.dict(exclude_unset=True))
+        success = await admin_service.update_user(user_id, request.model_dump(exclude_unset=True))
         if success:
             return {"message": "User updated successfully"}
         else:
@@ -205,7 +211,7 @@ async def update_user(
 @router.delete("/users/{user_id}")
 async def delete_user(
     user_id: str,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Delete user"""
     try:
@@ -229,7 +235,7 @@ async def delete_user(
 
 @router.get("/system/stats")
 async def get_system_stats(
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Get system statistics"""
     try:
@@ -248,7 +254,7 @@ async def get_system_logs(
     level: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Get system logs"""
     try:
@@ -264,7 +270,7 @@ async def get_system_logs(
 
 @router.get("/scheduling")
 async def get_scheduling_config(
-    token: str = Depends(require_admin)
+    payload: dict = Depends(require_admin)
 ):
     """Get scan scheduling configuration"""
     try:
