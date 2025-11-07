@@ -10,6 +10,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+  const insecureContext = typeof window !== 'undefined' && window.location.protocol !== 'https:'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,9 +35,15 @@ const Login: React.FC = () => {
           <p>Attack Surface Discovery Tool</p>
         </div>
 
+        {insecureContext && (
+          <div className="security-warning">
+            <strong>Warning:</strong> This page is being served over HTTP. Credentials may not be secure. Use HTTPS in production deployments.
+          </div>
+        )}
+
         {error && <div className="error-message">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="username">Username</label>
             <input
@@ -67,7 +74,9 @@ const Login: React.FC = () => {
         </form>
 
         <div className="login-footer">
-          <p>API Documentation: <a href="/api/docs" target="_blank">/api/docs</a></p>
+          <p>
+            API Documentation: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
+          </p>
         </div>
       </div>
     </div>

@@ -22,9 +22,8 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 
 class IntegrationConfig(BaseModel):
-    name: str
-    enabled: bool
-    config: Dict[str, Any]
+    enabled: bool = True
+    config: Dict[str, Any] = {}
 
 
 class IntegrationStatus(BaseModel):
@@ -33,6 +32,10 @@ class IntegrationStatus(BaseModel):
     connected: bool
     last_sync: Optional[datetime]
     error: Optional[str]
+    integration_type: Optional[str] = None
+    description: Optional[str] = None
+    configured: Optional[bool] = None
+    key: Optional[str] = None
 
 
 class SyncRequest(BaseModel):
@@ -56,6 +59,21 @@ async def list_integrations(
         )
 
 
+@router.get("/{integration_name}")
+async def get_integration_details(
+    integration_name: str,
+    payload: dict = Depends(verify_token)
+):
+    """Get integration details including config metadata"""
+    details = await integration_service.get_integration_details(integration_name)
+    if not details:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Integration not found"
+        )
+    return details
+
+
 @router.get("/{integration_name}/status", response_model=IntegrationStatus)
 async def get_integration_status(
     integration_name: str,
@@ -63,15 +81,15 @@ async def get_integration_status(
 ):
     """Get integration status"""
     try:
-        status = await integration_service.get_integration_status(integration_name)
-        if not status:
+        status_data = await integration_service.get_integration_status(integration_name)
+        if not status_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Integration not found"
             )
-        
-        return IntegrationStatus(**status)
-        
+
+        return IntegrationStatus(**status_data)
+
     except HTTPException:
         raise
     except Exception as e:
@@ -84,15 +102,15 @@ async def get_integration_status(
 @router.put("/{integration_name}/config")
 async def update_integration_config(
     integration_name: str,
-    config: IntegrationConfig,
+    config_update: IntegrationConfig,
     payload: dict = Depends(verify_token)
 ):
     """Update integration configuration"""
     try:
         success = await integration_service.update_integration_config(
-            integration_name, config.config, config.enabled
+            integration_name, config_update.config, config_update.enabled
         )
-        
+
         if success:
             return {"message": "Integration configuration updated successfully"}
         else:
@@ -100,7 +118,7 @@ async def update_integration_config(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Integration not found"
             )
-        
+
     except HTTPException:
         raise
     except Exception as e:

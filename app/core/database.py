@@ -38,9 +38,31 @@ Base = declarative_base()
 
 async def init_db():
     """Initialize database tables"""
+    from importlib import import_module
+
+    model_modules = [
+        "app.models.user",
+        "app.models.scan",
+        "app.models.device",
+        "app.models.integration",
+        "app.models.edr_integration",
+        "app.models.device_correction",
+        "app.models.discovery_agent",
+        "app.models.tagging",
+        "app.models.accuracy_ranking",
+    ]
+
+    for module_path in model_modules:
+        try:
+            import_module(module_path)
+        except Exception as exc:
+            # Log and continue so one bad import does not prevent start-up
+            import logging
+            logging.getLogger("database").warning(
+                "Failed to import model module %s: %s", module_path, exc
+            )
+
     async with async_engine.begin() as conn:
-        # Import all models to ensure they are registered
-        from app.models import user, scan, device, integration
         await conn.run_sync(Base.metadata.create_all)
 
 

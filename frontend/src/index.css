@@ -30,6 +30,12 @@ body {
   background-color: var(--bg);
   color: var(--text);
   line-height: 1.6;
+  opacity: 0;
+}
+
+body.app-loaded {
+  opacity: 1;
+  transition: opacity 0.2s ease-in;
 }
 
 code {

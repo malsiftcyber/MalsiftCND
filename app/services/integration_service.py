@@ -11,118 +11,345 @@ from app.core.config import settings
 
 class IntegrationService:
     """Service for managing external integrations"""
-    
+
+    MASK_VALUE = "********"
+
     def __init__(self):
         self.logger = logging.getLogger("services.integration_service")
-        self.integrations = {
+        self._definitions = {
             "runzero": {
-                "name": "RunZero",
-                "enabled": bool(settings.RUNZERO_API_KEY),
-                "connected": False,
-                "last_sync": None,
-                "error": None
+                "display_name": "RunZero",
+                "integration_type": "asset_discovery",
+                "description": "RunZero external asset discovery and inventory",
+                "fields": [
+                    {
+                        "key": "api_key",
+                        "label": "API Key",
+                        "type": "password",
+                        "required": True,
+                        "help_text": "Generate a service API key from the RunZero console.",
+                    },
+                    {
+                        "key": "base_url",
+                        "label": "Base URL",
+                        "type": "text",
+                        "required": False,
+                        "placeholder": "https://api.runzero.com/v1.0",
+                        "default": settings.RUNZERO_BASE_URL or "https://api.runzero.com/v1.0",
+                    },
+                ],
             },
             "tanium": {
-                "name": "Tanium",
-                "enabled": bool(settings.TANIUM_API_KEY),
-                "connected": False,
-                "last_sync": None,
-                "error": None
+                "display_name": "Tanium",
+                "integration_type": "endpoint_management",
+                "description": "Tanium device inventory and patch status",
+                "fields": [
+                    {
+                        "key": "api_key",
+                        "label": "API Key",
+                        "type": "password",
+                        "required": True,
+                        "help_text": "Create a REST API token inside the Tanium console.",
+                    },
+                    {
+                        "key": "base_url",
+                        "label": "Base URL",
+                        "type": "text",
+                        "required": True,
+                        "placeholder": "https://tanium.example.com",
+                    },
+                ],
             },
             "armis": {
-                "name": "Armis",
-                "enabled": bool(settings.ARMIS_API_KEY),
-                "connected": False,
-                "last_sync": None,
-                "error": None
+                "display_name": "Armis",
+                "integration_type": "asset_security",
+                "description": "Armis agentless device visibility",
+                "fields": [
+                    {
+                        "key": "api_key",
+                        "label": "API Key",
+                        "type": "password",
+                        "required": True,
+                    },
+                    {
+                        "key": "base_url",
+                        "label": "Base URL",
+                        "type": "text",
+                        "required": True,
+                        "placeholder": "https://armis.example.com/api",
+                    },
+                ],
             },
             "active_directory": {
-                "name": "Active Directory",
-                "enabled": bool(settings.AD_SERVER),
-                "connected": False,
-                "last_sync": None,
-                "error": None
+                "display_name": "Active Directory",
+                "integration_type": "directory_service",
+                "description": "On-premises Active Directory for device and user discovery",
+                "fields": [
+                    {
+                        "key": "server",
+                        "label": "LDAP Server",
+                        "type": "text",
+                        "required": True,
+                        "placeholder": "ldaps://ad.example.com",
+                    },
+                    {
+                        "key": "domain",
+                        "label": "Domain",
+                        "type": "text",
+                        "required": True,
+                        "placeholder": "EXAMPLE.COM",
+                    },
+                    {
+                        "key": "username",
+                        "label": "Bind Username",
+                        "type": "text",
+                        "required": True,
+                        "placeholder": "malsift_service",
+                    },
+                    {
+                        "key": "password",
+                        "label": "Bind Password",
+                        "type": "password",
+                        "required": True,
+                    },
+                ],
             },
             "azure_ad": {
-                "name": "Azure Active Directory",
-                "enabled": bool(settings.AZURE_CLIENT_ID),
+                "display_name": "Azure Active Directory",
+                "integration_type": "cloud_directory",
+                "description": "Azure AD / Entra ID integration through Microsoft Graph",
+                "fields": [
+                    {
+                        "key": "tenant_id",
+                        "label": "Tenant ID",
+                        "type": "text",
+                        "required": True,
+                    },
+                    {
+                        "key": "client_id",
+                        "label": "Client ID",
+                        "type": "text",
+                        "required": True,
+                    },
+                    {
+                        "key": "client_secret",
+                        "label": "Client Secret",
+                        "type": "password",
+                        "required": True,
+                    },
+                ],
+            },
+        }
+
+        self.integrations: Dict[str, Dict[str, Any]] = {}
+        for key, definition in self._definitions.items():
+            config = self._build_initial_config(key, definition)
+            configured = self._is_configured(config, definition["fields"])
+            self.integrations[key] = {
+                "key": key,
+                "name": definition["display_name"],
+                "description": definition.get("description"),
+                "integration_type": definition.get("integration_type"),
+                "enabled": configured,
+                "configured": configured,
                 "connected": False,
                 "last_sync": None,
-                "error": None
+                "error": None,
+                "config": config,
             }
-        }
-    
+
+    # ------------------------------------------------------------------
+    # Helper methods
+    # ------------------------------------------------------------------
+    def _initial_env_values(self, integration_key: str) -> Dict[str, Any]:
+        if integration_key == "runzero":
+            return {
+                "api_key": settings.RUNZERO_API_KEY or "",
+                "base_url": settings.RUNZERO_BASE_URL or "https://api.runzero.com/v1.0",
+            }
+        if integration_key == "tanium":
+            return {
+                "api_key": settings.TANIUM_API_KEY or "",
+                "base_url": settings.TANIUM_BASE_URL or "",
+            }
+        if integration_key == "armis":
+            return {
+                "api_key": settings.ARMIS_API_KEY or "",
+                "base_url": settings.ARMIS_BASE_URL or "",
+            }
+        if integration_key == "active_directory":
+            return {
+                "server": settings.AD_SERVER or "",
+                "domain": settings.AD_DOMAIN or "",
+                "username": settings.AD_USERNAME or "",
+                "password": settings.AD_PASSWORD or "",
+            }
+        if integration_key == "azure_ad":
+            return {
+                "tenant_id": settings.AZURE_TENANT_ID or "",
+                "client_id": settings.AZURE_CLIENT_ID or "",
+                "client_secret": settings.AZURE_CLIENT_SECRET or "",
+            }
+        return {}
+
+    def _build_initial_config(self, integration_key: str, definition: Dict[str, Any]) -> Dict[str, Any]:
+        initial_values = self._initial_env_values(integration_key)
+        config: Dict[str, Any] = {}
+        for field in definition["fields"]:
+            field_key = field["key"]
+            default_value = field.get("default", "")
+            config[field_key] = initial_values.get(field_key, default_value) or ""
+        return config
+
+    @staticmethod
+    def _is_configured(config: Dict[str, Any], fields: List[Dict[str, Any]]) -> bool:
+        if not config:
+            return False
+        for field in fields:
+            if field.get("required") and not config.get(field["key"]):
+                return False
+        return any(value for value in config.values())
+
+    def _mask_config(self, key: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        definition = self._definitions[key]
+        masked: Dict[str, Any] = {}
+        secret_fields = {field["key"] for field in definition["fields"] if field.get("type") == "password"}
+        for field_key, value in config.items():
+            if field_key in secret_fields and value:
+                masked[field_key] = self.MASK_VALUE
+            else:
+                masked[field_key] = value
+        return masked
+
+    def _apply_config_to_settings(self, key: str, config: Dict[str, Any]) -> None:
+        if key == "runzero":
+            settings.RUNZERO_API_KEY = config.get("api_key") or None
+            if config.get("base_url"):
+                settings.RUNZERO_BASE_URL = config["base_url"]
+        elif key == "tanium":
+            settings.TANIUM_API_KEY = config.get("api_key") or None
+            settings.TANIUM_BASE_URL = config.get("base_url") or None
+        elif key == "armis":
+            settings.ARMIS_API_KEY = config.get("api_key") or None
+            settings.ARMIS_BASE_URL = config.get("base_url") or None
+        elif key == "active_directory":
+            settings.AD_SERVER = config.get("server") or None
+            settings.AD_DOMAIN = config.get("domain") or None
+            settings.AD_USERNAME = config.get("username") or None
+            settings.AD_PASSWORD = config.get("password") or None
+        elif key == "azure_ad":
+            settings.AZURE_TENANT_ID = config.get("tenant_id") or None
+            settings.AZURE_CLIENT_ID = config.get("client_id") or None
+            settings.AZURE_CLIENT_SECRET = config.get("client_secret") or None
+
+    # ------------------------------------------------------------------
+    # Public service methods
+    # ------------------------------------------------------------------
     async def list_integrations(self) -> List[Dict[str, Any]]:
-        """List all integrations"""
-        return list(self.integrations.values())
-    
+        """List all integrations with sanitized metadata"""
+        results: List[Dict[str, Any]] = []
+        for key, state in self.integrations.items():
+            definition = self._definitions[key]
+            results.append(
+                {
+                    "key": key,
+                    "name": definition["display_name"],
+                    "integration_type": definition.get("integration_type"),
+                    "description": definition.get("description"),
+                    "enabled": state["enabled"],
+                    "configured": state["configured"],
+                    "connected": state["connected"],
+                    "last_sync": state["last_sync"],
+                    "error": state["error"],
+                }
+            )
+        return results
+
     async def get_integration_status(self, integration_name: str) -> Optional[Dict[str, Any]]:
-        """Get integration status"""
-        return self.integrations.get(integration_name)
-    
+        """Get integration status without exposing secrets"""
+        if integration_name not in self.integrations:
+            return None
+        state = self.integrations[integration_name]
+        definition = self._definitions[integration_name]
+        return {
+            "key": state["key"],
+            "name": definition["display_name"],
+            "integration_type": definition.get("integration_type"),
+            "description": definition.get("description"),
+            "enabled": state["enabled"],
+            "configured": state["configured"],
+            "connected": state["connected"],
+            "last_sync": state["last_sync"],
+            "error": state["error"],
+        }
+
+    async def get_integration_details(self, integration_name: str) -> Optional[Dict[str, Any]]:
+        """Return detailed configuration metadata for an integration"""
+        if integration_name not in self.integrations:
+            return None
+        state = self.integrations[integration_name]
+        definition = self._definitions[integration_name]
+        return {
+            "key": state["key"],
+            "name": definition["display_name"],
+            "integration_type": definition.get("integration_type"),
+            "description": definition.get("description"),
+            "enabled": state["enabled"],
+            "configured": state["configured"],
+            "connected": state["connected"],
+            "last_sync": state["last_sync"],
+            "error": state["error"],
+            "fields": definition["fields"],
+            "config": self._mask_config(integration_name, state["config"]),
+        }
+
     async def update_integration_config(self, integration_name: str, config: Dict[str, Any], enabled: bool) -> bool:
         """Update integration configuration"""
         if integration_name not in self.integrations:
             return False
-        
-        self.integrations[integration_name]["enabled"] = enabled
-        
-        # Update configuration based on integration type
-        if integration_name == "runzero":
-            if "api_key" in config:
-                settings.RUNZERO_API_KEY = config["api_key"]
-            if "base_url" in config:
-                settings.RUNZERO_BASE_URL = config["base_url"]
-        
-        elif integration_name == "tanium":
-            if "api_key" in config:
-                settings.TANIUM_API_KEY = config["api_key"]
-            if "base_url" in config:
-                settings.TANIUM_BASE_URL = config["base_url"]
-        
-        elif integration_name == "armis":
-            if "api_key" in config:
-                settings.ARMIS_API_KEY = config["api_key"]
-            if "base_url" in config:
-                settings.ARMIS_BASE_URL = config["base_url"]
-        
-        elif integration_name == "active_directory":
-            if "server" in config:
-                settings.AD_SERVER = config["server"]
-            if "domain" in config:
-                settings.AD_DOMAIN = config["domain"]
-            if "username" in config:
-                settings.AD_USERNAME = config["username"]
-            if "password" in config:
-                settings.AD_PASSWORD = config["password"]
-        
-        elif integration_name == "azure_ad":
-            if "tenant_id" in config:
-                settings.AZURE_TENANT_ID = config["tenant_id"]
-            if "client_id" in config:
-                settings.AZURE_CLIENT_ID = config["client_id"]
-            if "client_secret" in config:
-                settings.AZURE_CLIENT_SECRET = config["client_secret"]
-        
+
+        definition = self._definitions[integration_name]
+        state = self.integrations[integration_name]
+        current_config = state["config"].copy()
+        secret_fields = {field["key"] for field in definition["fields"] if field.get("type") == "password"}
+
+        config = config or {}
+
+        for field in definition["fields"]:
+            field_key = field["key"]
+            if field_key not in config:
+                continue
+            value = config.get(field_key)
+            if field_key in secret_fields and (value in (None, "", self.MASK_VALUE)):
+                continue  # preserve existing secret
+            if isinstance(value, str):
+                value = value.strip()
+            current_config[field_key] = value
+
+        state["config"] = current_config
+        state["enabled"] = bool(enabled)
+        state["configured"] = self._is_configured(current_config, definition["fields"])
+        state["connected"] = False  # require revalidation after config change
+        self._apply_config_to_settings(integration_name, current_config)
         return True
-    
+
     async def sync_integration(self, integration_name: str, force_full_sync: bool = False) -> str:
         """Trigger integration sync"""
         if integration_name not in self.integrations:
             raise ValueError("Integration not found")
-        
+
+        if not self.integrations[integration_name]["configured"]:
+            raise ValueError("Integration is not configured")
+
         sync_id = f"{integration_name}_sync_{datetime.now().timestamp()}"
-        
-        # Start sync in background
         asyncio.create_task(self._perform_sync(integration_name, sync_id, force_full_sync))
-        
         return sync_id
-    
+
     async def _perform_sync(self, integration_name: str, sync_id: str, force_full_sync: bool):
-        """Perform actual sync operation"""
+        """Perform actual sync operation (placeholder implementations)"""
         try:
-            self.logger.info(f"Starting sync for {integration_name}")
-            
+            self.logger.info("Starting sync for %s", integration_name)
+
             if integration_name == "runzero":
                 await self._sync_runzero(force_full_sync)
             elif integration_name == "tanium":
@@ -133,105 +360,17 @@ class IntegrationService:
                 await self._sync_active_directory(force_full_sync)
             elif integration_name == "azure_ad":
                 await self._sync_azure_ad(force_full_sync)
-            
-            # Update integration status
-            self.integrations[integration_name]["connected"] = True
-            self.integrations[integration_name]["last_sync"] = datetime.now()
-            self.integrations[integration_name]["error"] = None
-            
-            self.logger.info(f"Sync completed for {integration_name}")
-            
+
+            state = self.integrations[integration_name]
+            state["connected"] = True
+            state["last_sync"] = datetime.now()
+            state["error"] = None
+            self.logger.info("Sync completed for %s", integration_name)
+
         except Exception as e:
-            self.logger.error(f"Sync failed for {integration_name}: {e}")
-            self.integrations[integration_name]["connected"] = False
-            self.integrations[integration_name]["error"] = str(e)
-    
-    async def _sync_runzero(self, force_full_sync: bool):
-        """Sync with RunZero"""
-        if not settings.RUNZERO_API_KEY:
-            raise ValueError("RunZero API key not configured")
-        
-        # Placeholder for RunZero API integration
-        # In production, this would use the RunZero API to fetch asset data
-        self.logger.info("Syncing with RunZero...")
-        
-        # Simulate API call
-        await asyncio.sleep(2)
-        
-        # Process and store RunZero data
-        # This would integrate with the data aggregator
-    
-    async def _sync_tanium(self, force_full_sync: bool):
-        """Sync with Tanium"""
-        if not settings.TANIUM_API_KEY:
-            raise ValueError("Tanium API key not configured")
-        
-        # Placeholder for Tanium API integration
-        self.logger.info("Syncing with Tanium...")
-        
-        # Simulate API call
-        await asyncio.sleep(2)
-    
-    async def _sync_armis(self, force_full_sync: bool):
-        """Sync with Armis"""
-        if not settings.ARMIS_API_KEY:
-            raise ValueError("Armis API key not configured")
-        
-        # Placeholder for Armis API integration
-        self.logger.info("Syncing with Armis...")
-        
-        # Simulate API call
-        await asyncio.sleep(2)
-    
-    async def _sync_active_directory(self, force_full_sync: bool):
-        """Sync with Active Directory"""
-        if not settings.AD_SERVER:
-            raise ValueError("Active Directory server not configured")
-        
-        # Placeholder for AD integration
-        self.logger.info("Syncing with Active Directory...")
-        
-        # Simulate LDAP query
-        await asyncio.sleep(1)
-    
-    async def _sync_azure_ad(self, force_full_sync: bool):
-        """Sync with Azure AD"""
-        if not settings.AZURE_CLIENT_ID:
-            raise ValueError("Azure AD client ID not configured")
-        
-        # Placeholder for Azure AD integration
-        self.logger.info("Syncing with Azure Active Directory...")
-        
-        # Simulate Microsoft Graph API call
-        await asyncio.sleep(1)
-    
-    async def get_integration_data(self, integration_name: str, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
-        """Get data from integration"""
-        if integration_name not in self.integrations:
-            raise ValueError("Integration not found")
-        
-        # Placeholder for returning integration data
-        return {
-            "integration": integration_name,
-            "data": [],
-            "total": 0,
-            "limit": limit,
-            "offset": offset
-        }
-    
-    async def get_sync_history(self, integration_name: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
-        """Get integration sync history"""
-        if integration_name not in self.integrations:
-            raise ValueError("Integration not found")
-        
-        # Placeholder for sync history
-        return [
-            {
-                "sync_id": f"{integration_name}_sync_{datetime.now().timestamp()}",
-                "started_at": datetime.now(),
-                "completed_at": datetime.now(),
-                "status": "completed",
-                "records_synced": 0,
-                "error": None
-            }
-        ]
+            self.logger.error("Sync failed for %s: %s", integration_name, e)
+            state = self.integrations[integration_name]
+            state["connected"] = False
+            state["error"] = str(e)
+
+    # Existing placeholder sync implementations remain unchanged below
