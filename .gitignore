@@ -164,3 +164,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Release assets (placeholder files, not committed)
+release-assets/
