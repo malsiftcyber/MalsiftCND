@@ -40,8 +40,16 @@ const AgentDownload: React.FC = () => {
     retry: 1,
   })
 
+  const getFileExtension = (platform: string): string => {
+    if (platform === 'windows') return '.exe'
+    if (platform === 'linux') return '.tar.gz'
+    if (platform === 'macos') return '.tar.gz'
+    return ''
+  }
+
   const handleDownload = (platform: string, architecture: string) => {
-    const downloadUrl = `https://github.com/malsiftcyber/MalsiftCND/releases/latest/download/malsift-agent-${platform}-${architecture}`
+    const fileExt = getFileExtension(platform)
+    const downloadUrl = `https://github.com/malsiftcyber/MalsiftCND/releases/latest/download/malsift-agent-${platform}-${architecture}${fileExt}`
     window.open(downloadUrl, '_blank')
   }
 

@@ -237,6 +237,22 @@ async def create_agent_update(
         )
 
 
+def get_agent_file_extension(platform: str, architecture: str) -> str:
+    """Get the appropriate file extension for agent downloads based on platform"""
+    if platform == "windows":
+        # Windows: use .exe for executables
+        return ".exe"
+    elif platform == "linux":
+        # Linux: use .tar.gz for compressed binaries
+        return ".tar.gz"
+    elif platform == "macos":
+        # macOS: use .tar.gz for compressed binaries (or .pkg for installers)
+        return ".tar.gz"
+    else:
+        # Default: no extension (binary)
+        return ""
+
+
 @router.get("/installers/{platform}/{architecture}")
 async def get_agent_installer(
     platform: str,
@@ -252,12 +268,14 @@ async def get_agent_installer(
             )
         
         installer_script = agent_service.generate_agent_installer(platform, architecture)
+        file_ext = get_agent_file_extension(platform, architecture)
+        download_url = f"https://github.com/malsiftcyber/MalsiftCND/releases/latest/download/malsift-agent-{platform}-{architecture}{file_ext}"
         
         return {
             "platform": platform,
             "architecture": architecture,
             "installer_script": installer_script,
-            "download_url": f"https://github.com/malsiftcyber/MalsiftCND/releases/latest/download/malsift-agent-{platform}-{architecture}",
+            "download_url": download_url,
             "instructions": f"Download and run the installer script to install the MalsiftCND Discovery Agent on {platform} {architecture}"
         }
     except Exception as e:
