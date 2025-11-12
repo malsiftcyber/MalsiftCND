@@ -50,7 +50,22 @@ const AgentDownload: React.FC = () => {
   const handleDownload = (platform: string, architecture: string) => {
     const fileExt = getFileExtension(platform)
     const downloadUrl = `https://github.com/malsiftcyber/MalsiftCND/releases/latest/download/malsift-agent-${platform}-${architecture}${fileExt}`
-    window.open(downloadUrl, '_blank')
+    
+    // Open in new tab - GitHub will handle the download
+    // Using window.location would navigate away, so we use window.open
+    const newWindow = window.open(downloadUrl, '_blank', 'noopener,noreferrer')
+    
+    // If popup was blocked, fall back to creating a link
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      // Popup blocked - create a temporary link instead
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
 
   const handleCopy = (text: string, id: string) => {
