@@ -295,17 +295,21 @@ setup_env() {
     fi
     
     read -p "Custom database password? (press Enter for default 'malsift'): " db_password
-    if [ -n "$db_password" ]; then
-        # Update docker-compose.yml with custom password
-        print_status "Updating docker-compose.yml with custom database password..."
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/POSTGRES_PASSWORD=malsift/POSTGRES_PASSWORD=$db_password/" docker-compose.yml
-            sed -i '' "s|postgresql://malsift:malsift@|postgresql://malsift:$db_password@|" .env
-        else
-            sed -i "s/POSTGRES_PASSWORD=malsift/POSTGRES_PASSWORD=$db_password/" docker-compose.yml
-            sed -i "s|postgresql://malsift:malsift@|postgresql://malsift:$db_password@|" .env
-        fi
+    if [ -z "$db_password" ]; then
+        db_password="malsift"
+    else
+        print_status "Using custom database password"
     fi
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$db_password/" .env || echo "POSTGRES_PASSWORD=$db_password" >> .env
+        sed -i '' "s|^DATABASE_URL=postgresql://malsift:.*@|DATABASE_URL=postgresql://malsift:$db_password@|" .env
+    else
+        sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$db_password/" .env || echo "POSTGRES_PASSWORD=$db_password" >> .env
+        sed -i "s|^DATABASE_URL=postgresql://malsift:.*@|DATABASE_URL=postgresql://malsift:$db_password@|" .env
+    fi
+
+    print_success "Database credentials stored in .env"
 }
 
 # Prompt for admin user
