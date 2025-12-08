@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = "postgresql://malsift:malsift@localhost:5432/malsift"
+    POSTGRES_PASSWORD: Optional[str] = None  # Used by docker-compose for DATABASE_URL construction
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
