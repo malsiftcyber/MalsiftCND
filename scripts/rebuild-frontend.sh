@@ -40,3 +40,4 @@ $DOCKER_SUDO $DOCKER_COMPOSE_CMD up -d
 echo -e "${GREEN}Done! Frontend has been rebuilt.${NC}"
 echo -e "${BLUE}The web interface should now have the updated download functionality.${NC}"
 
+
