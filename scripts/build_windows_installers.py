@@ -342,7 +342,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=True,  # Must be True for console application
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -411,7 +411,18 @@ def build_windows_installers():
     
     # Build agent executable first
     print("Building agent executable...")
-    if not run_command(f"pyinstaller --onefile --name malsift-agent --distpath {dist_dir} agent/malsift_agent.py", cwd=project_root):
+    # Use --console for Windows (agent needs console output, not GUI)
+    # Explicitly specify architecture if needed
+    pyinstaller_cmd = [
+        "pyinstaller",
+        "--onefile",
+        "--console",  # Console mode for agent
+        "--name", "malsift-agent",
+        "--distpath", str(dist_dir),
+        "--clean",
+        "agent/malsift_agent.py"
+    ]
+    if not run_command(" ".join(pyinstaller_cmd), cwd=project_root):
         return False
     
     # Create configuration file

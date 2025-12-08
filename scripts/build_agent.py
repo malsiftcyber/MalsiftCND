@@ -58,20 +58,43 @@ def build_agent():
     current_platform = platform.system().lower()
     current_arch = platform.machine().lower()
     
-    print(f"Building for {current_platform} {current_arch}...")
+    # Normalize architecture names
+    arch_map = {
+        'x86_64': 'x64',
+        'amd64': 'x64',
+        'i386': 'x86',
+        'i686': 'x86',
+        'x86': 'x86',
+        'arm64': 'arm64',
+        'aarch64': 'arm64'
+    }
+    normalized_arch = arch_map.get(current_arch, current_arch)
     
-    # PyInstaller command
+    print(f"Building for {current_platform} {normalized_arch}...")
+    
+    # PyInstaller command - use console mode for all platforms (agent needs console output)
     pyinstaller_cmd = [
         "pyinstaller",
         "--onefile",
-        "--windowed" if current_platform == "windows" else "--console",
-        "--name", f"malsift-agent-{current_platform}-{current_arch}",
+        "--console",  # Always use console mode for agent
+        "--name", f"malsift-agent-{current_platform}-{normalized_arch}",
         "--distpath", str(dist_dir),
         "--workpath", str(build_dir),
         "--specpath", str(build_dir),
         "--clean",
-        str(agent_dir / "malsift_agent.py")
     ]
+    
+    # Add Windows-specific options
+    if current_platform == "windows":
+        pyinstaller_cmd.extend([
+            "--uac-admin",  # Request admin privileges if needed
+            "--version-file", "version.txt" if Path("version.txt").exists() else None,
+        ])
+        # Remove None values
+        pyinstaller_cmd = [x for x in pyinstaller_cmd if x is not None]
+    
+    # Add the script to build
+    pyinstaller_cmd.append(str(agent_dir / "malsift_agent.py"))
     
     if not run_command(" ".join(pyinstaller_cmd), cwd=project_root):
         return False
