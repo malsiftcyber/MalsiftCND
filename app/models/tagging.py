@@ -4,8 +4,8 @@ Database models for company and site tagging
 from sqlalchemy import Column, String, DateTime, Boolean, Text, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 import uuid
-from datetime import datetime
 
 from app.core.database import Base
 
@@ -22,8 +22,8 @@ class Company(Base):
     contact_phone = Column(String(50), nullable=True)
     address = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     sites = relationship("Site", back_populates="company", cascade="all, delete-orphan")
@@ -51,8 +51,8 @@ class Site(Base):
     postal_code = Column(String(20), nullable=True)
     timezone = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     company = relationship("Company", back_populates="sites")
@@ -73,7 +73,7 @@ class DeviceTag(Base):
     tag_key = Column(String(100), nullable=False)  # 'company_name', 'site_code', 'department', etc.
     tag_value = Column(String(255), nullable=False)  # Actual tag value
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     device = relationship("Device", back_populates="device_tags")
@@ -90,7 +90,7 @@ class ScanTag(Base):
     tag_key = Column(String(100), nullable=False)
     tag_value = Column(String(255), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     scan = relationship("Scan", back_populates="scan_tags")

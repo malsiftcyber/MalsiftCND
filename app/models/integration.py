@@ -46,7 +46,7 @@ class IntegrationSync(Base):
     __tablename__ = "integration_syncs"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    integration_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    integration_id = Column(UUID(as_uuid=True), ForeignKey("integrations.id"), nullable=False, index=True)
     
     # Sync information
     sync_type = Column(String(20), nullable=False)  # full, incremental
