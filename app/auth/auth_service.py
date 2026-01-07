@@ -355,3 +355,11 @@ class AuthService:
     def generate_backup_codes(self, count: int = 10) -> list:
         """Generate backup codes for MFA"""
         return [secrets.token_hex(4).upper() for _ in range(count)]
+    
+    def get_current_user_id(self, token: str) -> Optional[str]:
+        """Get current user ID from JWT token"""
+        try:
+            payload = self.verify_token(token)
+            return payload.get("user_id")
+        except HTTPException:
+            return None

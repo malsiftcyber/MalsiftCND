@@ -392,7 +392,7 @@ async def create_dashboard(
                 source_type_filter=request.source_type_filter,
                 time_range_days=request.time_range_days,
                 min_accuracy_threshold=request.min_accuracy_threshold,
-                created_by=auth_service.get_current_user_id(token)  # You'll need to implement this
+                created_by=payload.get("user_id")
             )
             
             db.add(dashboard)
@@ -496,7 +496,7 @@ async def acknowledge_alert(
                 )
             
             alert.is_acknowledged = True
-            alert.acknowledged_by = auth_service.get_current_user_id(token)  # You'll need to implement this
+            alert.acknowledged_by = payload.get("user_id")
             alert.acknowledged_at = datetime.utcnow()
             
             db.commit()

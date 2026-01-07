@@ -345,7 +345,7 @@ async def tag_device(
             company_id=request.company_id,
             site_id=request.site_id,
             custom_tags=request.custom_tags,
-            user_id=auth_service.get_current_user_id(token)  # You'll need to implement this
+            user_id=payload.get("user_id")
         )
         
         if not success:
@@ -394,7 +394,7 @@ async def tag_scan(
             company_id=request.company_id,
             site_id=request.site_id,
             custom_tags=request.custom_tags,
-            user_id=auth_service.get_current_user_id(token)  # You'll need to implement this
+            user_id=payload.get("user_id")
         )
         
         if not success:

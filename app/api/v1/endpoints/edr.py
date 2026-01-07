@@ -107,7 +107,7 @@ async def create_edr_integration(
                 company_id=request.company_id,
                 site_id=request.site_id,
                 description=request.description,
-                created_by=auth_service.get_current_user_id(token)  # You'll need to implement this
+                created_by=payload.get("user_id")
             )
             
             db.add(integration)

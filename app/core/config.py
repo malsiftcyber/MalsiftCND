@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "MalsiftCND"
     VERSION: str = "1.0.0"
     DEBUG: bool = False
-    SECRET_KEY: str
+    SECRET_KEY: str = ""  # Will be validated - must be set via environment
     
     # Database
     DATABASE_URL: str = "postgresql://malsift:malsift@localhost:5432/malsift"
@@ -30,15 +30,15 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # Security
-    ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[str] = ["*"]
+    ALLOWED_HOSTS: List[str] = ["*"]  # For TrustedHostMiddleware - can be wildcard
+    CORS_ORIGINS: List[str] = ["*"]  # For CORS - should be restricted in production
     
     # SSL/TLS
     SSL_KEYFILE: Optional[str] = None
     SSL_CERTFILE: Optional[str] = None
     
     # Authentication
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = ""  # Will be validated - must be set via environment
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

@@ -150,8 +150,24 @@ async def verify_mfa(request: MFATokenRequest, token: str = Depends(oauth2_schem
         )
     
     # Get user's MFA secret from database
-    # This should be implemented with proper database retrieval
-    user_secret = "PLACEHOLDER_SECRET"  # Replace with actual database query
+    from sqlalchemy import text
+    from app.core.database import AsyncSessionLocal
+    
+    user_secret = None
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            text("SELECT mfa_secret FROM users WHERE username = :username"),
+            {"username": username}
+        )
+        row = result.fetchone()
+        if row and row.mfa_secret:
+            user_secret = row.mfa_secret
+    
+    if not user_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA not set up for this user"
+        )
     
     if auth_service.verify_mfa_token(user_secret, request.token):
         return {"verified": True}
